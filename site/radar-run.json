@@ -1,15 +1,15 @@
 [
  {
-  "generated_at": "2026-11-20T03:43:43+00:00",
-  "candidates": 4337,
-  "search_requests": 184,
-  "ranked": 86,
-  "in_both_rankings": 14,
-  "flagged": 12,
+  "generated_at": "2026-11-20T04:51:44+00:00",
+  "candidates": 26726,
+  "search_requests": 979,
+  "ranked": 51,
+  "in_both_rankings": 29,
+  "flagged": 6,
   "momentum_source": "lifetime",
   "dropped_signals": "accel, rel_growth",
-  "enriched": 0,
-  "degraded": true,
-  "min_stars": null
+  "enriched": 120,
+  "degraded": false,
+  "min_stars": 300
  }
 ]
