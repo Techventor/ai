@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import datetime as dt
 import os
+import re
 import time
 import sqlite3
 import sys
@@ -333,12 +334,89 @@ def test_enrichment_budget() -> None:
     check("but did enrich something", len(seen) > 0, str(len(seen)))
 
 
+def test_sharding_request_count() -> None:
+    """Each shard must cost one request, not a count plus a read.
+
+    total_count arrives inside the first page of results, so asking for it
+    separately spent an extra request on every shard -- and most shards hold
+    under one page, where that was half the cost of reading them.
+    """
+    print("discovery sharding")
+    from aiscout.discover import Discovery
+
+    class FakeResp:
+        def __init__(self, body):
+            self.body = body
+
+    class FakeClient:
+        """Stands in for GitHub: 250 repos between 1000 and 1999 stars."""
+        def __init__(self):
+            self.calls = []
+
+        def search_repos(self, query, page=1, per_page=100):
+            self.calls.append((query, page))
+            m = re.search(r"stars:(\d+)\.\.(\d+)", query)
+            lo, hi = int(m.group(1)), int(m.group(2))
+            ids = [i for i in range(250) if 1000 <= 1000 + i < 2000
+                   and lo <= 1000 + i <= hi]
+            start = (page - 1) * per_page
+            window = ids[start:start + per_page]
+            return FakeResp({
+                "total_count": len(ids),
+                "items": [{"id": i, "full_name": "o/r%d" % i,
+                           "stargazers_count": 1000 + i} for i in window],
+            })
+
+    client = FakeClient()
+    d = Discovery(client=client, verbose=False)
+    d._sharded("topic:x", "topic:x", 1000)
+
+    check("every repo found", len(d.repos) == 250, str(len(d.repos)))
+    # 250 results over 100 per page = 3 pages, and no separate count request
+    check("three requests, no count probe", len(client.calls) == 3,
+          str(client.calls))
+    check("pages read in order",
+          [c[1] for c in client.calls] == [1, 2, 3], str(client.calls))
+    check("queries_run matches real requests",
+          d.queries_run == len(client.calls),
+          f"{d.queries_run} vs {len(client.calls)}")
+
+
+def test_small_shard_is_one_request() -> None:
+    """A shard that fits in a page must cost exactly one request."""
+    print("discovery small shard")
+    from aiscout.discover import Discovery
+
+    class FakeResp:
+        def __init__(self, body):
+            self.body = body
+
+    class FakeClient:
+        def __init__(self):
+            self.calls = 0
+
+        def search_repos(self, query, page=1, per_page=100):
+            self.calls += 1
+            return FakeResp({
+                "total_count": 7,
+                "items": [{"id": i, "full_name": "o/r%d" % i,
+                           "stargazers_count": 1500} for i in range(7)],
+            })
+
+    client = FakeClient()
+    d = Discovery(client=client, verbose=False)
+    d._sharded("topic:x", "topic:x", 1000)
+    check("one request for a one-page shard", client.calls == 1, str(client.calls))
+    check("all seven kept", len(d.repos) == 7, str(len(d.repos)))
+
+
 def main() -> int:
     for fn in (test_percentiles, test_http_parsing, test_categories,
                test_momentum_baselines, test_momentum_deceleration,
                test_momentum_without_history, test_rel_growth_with_history,
                test_weight_renormalisation, test_teaching_repos_excluded,
                test_202_gives_up_quickly, test_enrichment_budget,
+               test_sharding_request_count, test_small_shard_is_one_request,
                test_flags):
         fn()
     print()

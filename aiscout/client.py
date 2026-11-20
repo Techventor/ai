@@ -236,10 +236,6 @@ class GitHubClient:
                          "sort": "stars", "order": "desc"},
                         is_search=True)
 
-    def count_repos(self, query: str) -> int:
-        resp = self.search_repos(query, page=1, per_page=1)
-        return int(resp.body.get("total_count", 0)) if isinstance(resp.body, dict) else 0
-
     # ---------------------------------------------------------------- misc
 
     def rate_limit(self) -> dict:
