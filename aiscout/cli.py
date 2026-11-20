@@ -157,8 +157,11 @@ def cmd_rescore(args: argparse.Namespace) -> int:
 
     influence = scorer.shortlist(repos, "influence", args.top)
     momentum = scorer.shortlist(repos, "momentum", args.top)
+    info = store.run_info(run_id)
     meta = {
-        "run_id": run_id, "candidates": len(repos), "queries": 0,
+        "run_id": run_id, "candidates": len(repos),
+        # the searches that gathered this data, not the zero this rescore made
+        "queries": info.get("queries", 0),
         "enriched": sum(1 for r in repos if r.get("contributors") is not None),
         "degraded": not enriched, "momentum_source": momentum_source,
         "dropped_signals": scorer.dropped_signals, "api_requests": 0,

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import re
 import sqlite3
 import uuid
 from dataclasses import dataclass
@@ -182,6 +183,22 @@ class Store:
                 seen_err[rid] = err
                 best[rid] = (row["stars"], days)
         return best
+
+    def run_info(self, run_id: str) -> dict:
+        """What a stored run recorded about itself.
+
+        `queries` is recovered from the notes column so a rescore can report
+        how the data was actually gathered, rather than the zero search
+        requests the rescore itself made.
+        """
+        row = self.conn.execute(
+            "SELECT * FROM runs WHERE run_id = ?", (run_id,)).fetchone()
+        if not row:
+            return {}
+        info = {k: row[k] for k in row.keys()}
+        match = re.search(r"queries=(\d+)", row["notes"] or "")
+        info["queries"] = int(match.group(1)) if match else 0
+        return info
 
     def latest_run_id(self) -> str | None:
         row = self.conn.execute(

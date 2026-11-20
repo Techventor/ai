@@ -165,13 +165,39 @@ data/aiscout.db          SQLite 快照库 —— 这个别删，势头全靠它
 
 ---
 
-## 定时运行
+## 定时运行与网页
 
-`.github/workflows/radar.yml` 每天跑一次，并把报告和快照库提交回仓库。
+`.github/workflows/radar.yml` 每天跑一次，做四件事：
 
-**不需要任何配置就能跑。** 推上去之后去仓库的 Actions 页点一次 "AI OSS radar" → "Run workflow"，之后每天自动跑。它用 Actions 自带的 `GITHUB_TOKEN`，你不用管。
+1. 扫描 GitHub，重新打分
+2. 把报告和快照库提交回仓库
+3. 生成 `site/` 下的网页数据
+4. 把 `site/` 发布到 GitHub Pages
 
-**攒够两次运行，势头榜才有意义**（原因见上面那节）。
+所以**网页是自己更新的**，不需要任何人去刷新。想立刻更新就去 Actions 点一下 Run workflow，几分钟后网页就是新的。
+
+### 只需要做一次的设置
+
+1. 仓库 **Settings** → 左侧 **Pages** → Source 选 **GitHub Actions**
+2. 仓库 **Actions** 页 → 左侧 **AI OSS radar** → 右侧 **Run workflow**
+
+之后每天早上自动跑。扫描用的是 Actions 自带的 `GITHUB_TOKEN`，不用配任何密钥。
+
+**攒够两次运行，势头榜才有意义**（原因见上面那节）。第一次运行后网页上那条黄色提示会说明这一点，等真实周环比出来之后提示会自动消失，标签名也会从"增长榜"变回"势头榜"。
+
+### 网页本身
+
+`site/index.html` 是**零依赖**的单文件页面：不加载任何 CDN、不用外部字体，只 `fetch` 同目录下的两个 JSON。这样它在网络受限的环境里也能正常打开，也不会因为某个 CDN 改版而哪天突然坏掉。
+
+有搜索框、分类筛选、点列头排序、图例点击只看某一类、深浅配色切换（记在 `localStorage`），以及一张双对数散点图——横轴 star 总数、纵轴周增速，一眼能看出"老牌"和"新来的"分布在哪。
+
+本地预览：
+
+```bash
+python3 scripts/flatten.py reports/latest.json site/radar-rows.json \
+    --run-out site/radar-run.json
+python3 -m http.server -d site 8000      # 然后开 http://localhost:8000
+```
 
 ### 可选：加个 PAT 把富化范围调大
 

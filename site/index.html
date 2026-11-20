@@ -1,0 +1,858 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AI 开源雷达</title>
+<meta name="description" content="GitHub 上有影响力的 AI 开源项目榜单，每日自动更新。">
+<style>
+  /* Layout: one column. Framing, then the scatter that separates the
+     established from the newly arrived, then the two rankings as tabs.
+     No external fonts or scripts: this page has to keep working unattended,
+     and a CDN that is slow or blocked would break it. */
+  :root {
+    color-scheme: light;
+    /* neutrals carry a slight blue-green bias so they read as chosen */
+    --bg: #fbfcfc;
+    --panel: #ffffff;
+    --line: #e2e7e8;
+    --line-strong: #c9d1d3;
+    --fg: #16201f;
+    --fg-muted: #5d6b6c;
+    --fg-faint: #8b989a;
+    --accent: #0f766e;
+    --ok: #2f7d4f;
+    --warn: #9a6a0a;
+    --bad: #b3401f;
+    --grid: #eef1f2;
+    --shadow: 0 1px 2px rgba(20, 35, 35, .05), 0 4px 14px rgba(20, 35, 35, .04);
+    --radius: 10px;
+    --c1: #3f6fd8; --c2: #16897c; --c3: #b4701a; --c4: #7c5cd6;
+    --c5: #c2517f; --c6: #a8881b; --c7: #4d8450; --c8: #c15a2e;
+    --c9: #7c878a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0f1514;
+      --panel: #161d1d;
+      --line: #273131;
+      --line-strong: #3a4645;
+      --fg: #e8eeed;
+      --fg-muted: #9aa8a8;
+      --fg-faint: #6d7b7b;
+      --accent: #4db6a6;
+      --ok: #5cbd80;
+      --warn: #d9a63c;
+      --bad: #e8795a;
+      --grid: #1e2726;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 14px rgba(0, 0, 0, .25);
+      --c1: #6b95f0; --c2: #35b2a2; --c3: #d99a44; --c4: #a68bf0;
+      --c5: #e07aa4; --c6: #ccae3e; --c7: #6fae72; --c8: #e58157;
+      --c9: #93a0a2;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0f1514; --panel: #161d1d; --line: #273131; --line-strong: #3a4645;
+    --fg: #e8eeed; --fg-muted: #9aa8a8; --fg-faint: #6d7b7b;
+    --accent: #4db6a6; --ok: #5cbd80; --warn: #d9a63c; --bad: #e8795a;
+    --grid: #1e2726;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 14px rgba(0, 0, 0, .25);
+    --c1: #6b95f0; --c2: #35b2a2; --c3: #d99a44; --c4: #a68bf0;
+    --c5: #e07aa4; --c6: #ccae3e; --c7: #6fae72; --c8: #e58157;
+    --c9: #93a0a2;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.6 system-ui, -apple-system, "Segoe UI", Roboto,
+      "Helvetica Neue", "PingFang SC", "Hiragino Sans GB",
+      "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  }
+  .wrap {
+    max-width: 1180px; margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 40px 64px;
+    display: flex; flex-direction: column; gap: 36px;
+  }
+
+  h1 {
+    margin: 0; font-size: clamp(26px, 5vw, 38px); line-height: 1.15;
+    letter-spacing: -.02em; font-weight: 600; text-wrap: balance;
+  }
+  .head { display: flex; flex-direction: column; gap: 12px; }
+  .head-top {
+    display: flex; gap: 16px; align-items: baseline;
+    justify-content: space-between; flex-wrap: wrap;
+  }
+  .lede { margin: 0; color: var(--fg-muted); max-width: 70ch; }
+  .lede b { color: var(--fg); font-variant-numeric: tabular-nums; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center;
+    font-size: 13px; color: var(--fg-faint);
+  }
+  .meta-row a { color: var(--accent); text-decoration: none; }
+  .meta-row a:hover { text-decoration: underline; }
+  .stale { color: var(--warn); font-weight: 500; }
+
+  .note {
+    border: 1px solid var(--line); border-left: 3px solid var(--warn);
+    border-radius: var(--radius); padding: 14px 16px; font-size: 13.5px;
+    color: var(--fg-muted); max-width: 86ch; background: var(--panel);
+  }
+  .note strong { color: var(--fg); }
+  .note code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: .92em; background: var(--grid); padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  .tiles {
+    display: grid; gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(146px, 1fr));
+  }
+  .tile {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 2px; min-width: 0;
+  }
+  .tile-n {
+    font-size: 30px; line-height: 1.1; font-weight: 600;
+    letter-spacing: -.02em; font-variant-numeric: tabular-nums;
+  }
+  .tile-l { font-size: 12.5px; color: var(--fg-muted); }
+
+  section { display: flex; flex-direction: column; gap: 14px; }
+  h2 {
+    margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -.01em;
+  }
+  .sub { margin: 0; font-size: 13.5px; color: var(--fg-muted); max-width: 76ch; }
+
+  .chart-card {
+    position: relative; background: var(--panel);
+    border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 14px; box-shadow: var(--shadow); min-height: 320px;
+  }
+  .chart-card svg { display: block; width: 100%; height: auto; }
+  .tip {
+    position: absolute; pointer-events: none; opacity: 0; z-index: 4;
+    transition: opacity .12s; background: var(--panel);
+    border: 1px solid var(--line-strong); border-radius: 8px;
+    padding: 8px 10px; font-size: 12.5px; max-width: 270px;
+    box-shadow: var(--shadow);
+  }
+  .tip b { display: block; margin-bottom: 3px; }
+  .tip span { color: var(--fg-muted); }
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 12.5px;
+    color: var(--fg-muted);
+  }
+  .key {
+    display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+    border: 0; background: none; font: inherit; color: inherit; padding: 0;
+  }
+  .key[aria-pressed="true"] { color: var(--fg); font-weight: 500; }
+  .key.dim { opacity: .4; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  text { fill: var(--fg-faint); font-size: 11px; }
+  .axis-line { stroke: var(--line-strong); }
+  .grid-line { stroke: var(--grid); }
+
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    justify-content: space-between;
+  }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+  .tab {
+    appearance: none; cursor: pointer; font: inherit; font-size: 13.5px;
+    background: transparent; color: var(--fg-muted);
+    border: 1px solid var(--line); border-radius: 8px; padding: 7px 14px;
+  }
+  .tab:hover { color: var(--fg); }
+  .tab[aria-selected="true"] {
+    background: var(--panel); color: var(--fg); font-weight: 500;
+    border-color: var(--line-strong); box-shadow: var(--shadow);
+  }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; }
+  input[type="search"], select {
+    font: inherit; font-size: 13.5px; color: var(--fg);
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 8px; padding: 7px 10px; min-width: 0;
+  }
+  input[type="search"] { width: 180px; }
+  input[type="search"]:focus-visible, select:focus-visible,
+  .tab:focus-visible, .key:focus-visible, th button:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 1px;
+  }
+
+  .scroll {
+    overflow-x: auto; border: 1px solid var(--line);
+    border-radius: var(--radius); background: var(--panel);
+    box-shadow: var(--shadow);
+  }
+  table { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 13px; }
+  th, td {
+    text-align: left; padding: 9px 12px; vertical-align: top;
+    border-bottom: 1px solid var(--line);
+  }
+  thead th {
+    position: sticky; top: 0; z-index: 1; background: var(--panel);
+    border-bottom: 1px solid var(--line-strong); white-space: nowrap;
+    color: var(--fg-muted); font-weight: 500; padding: 0;
+  }
+  th button {
+    appearance: none; background: none; border: 0; font: inherit;
+    color: inherit; cursor: pointer; padding: 9px 12px; width: 100%;
+    text-align: inherit; display: flex; gap: 5px; align-items: center;
+  }
+  th.num button { justify-content: flex-end; }
+  th button:hover { color: var(--fg); }
+  th[aria-sort] button { color: var(--fg); font-weight: 600; }
+  .arrow { font-size: 9px; opacity: .8; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover { background: var(--grid); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .nm { font-weight: 500; }
+  .nm a { color: inherit; text-decoration: none; }
+  .nm a:hover { color: var(--accent); text-decoration: underline; }
+  .what { color: var(--fg-muted); min-width: 230px; }
+  .cat { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .flag {
+    display: inline-block; border: 1px solid var(--line-strong);
+    color: var(--fg-muted); border-radius: 4px; padding: 0 5px;
+    margin: 3px 3px 0 0; font-size: 10.5px; white-space: nowrap;
+  }
+  .flag.bad { border-color: var(--bad); color: var(--bad); }
+  .msg { padding: 28px 16px; color: var(--fg-muted); font-size: 13.5px; text-align: center; }
+  .msg.err { color: var(--bad); }
+
+  details { font-size: 13px; color: var(--fg-muted); }
+  summary { cursor: pointer; color: var(--fg); font-weight: 500; }
+  details dl {
+    display: grid; gap: 7px 16px; grid-template-columns: max-content 1fr;
+    margin: 14px 0 0;
+  }
+  details dt { font-weight: 600; color: var(--fg); white-space: nowrap; }
+  details dd { margin: 0; }
+  @media (max-width: 560px) {
+    details dl { grid-template-columns: 1fr; }
+    details dd { margin-bottom: 10px; }
+    input[type="search"] { width: 100%; }
+    .filters { width: 100%; }
+    .filters select { flex: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="head">
+    <div class="head-top">
+      <h1>AI 开源雷达</h1>
+      <button class="tab" id="theme-btn" type="button" aria-label="切换深浅配色">◐ 配色</button>
+    </div>
+    <p class="lede" id="lede">正在载入数据…</p>
+    <div class="meta-row" id="meta-row"></div>
+  </header>
+
+  <p class="note" id="note" hidden></p>
+
+  <div class="tiles" id="tiles"></div>
+
+  <section id="scatter-section">
+    <h2>老牌与新来的</h2>
+    <p class="sub">
+      两个轴都是对数刻度。横轴越靠右 star 总数越多，纵轴越靠上吸星速度越快。
+      成熟框架集中在右下角——体量大，相对自身规模增长慢。鼠标悬停看明细，点图例可以只看某一类。
+    </p>
+    <div class="chart-card">
+      <div id="chart"></div>
+      <div class="tip" id="tip"></div>
+    </div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <section id="rankings">
+    <div class="controls">
+      <div class="tabs" role="tablist" aria-label="榜单">
+        <button class="tab" type="button" role="tab" id="tab-inf"
+                aria-selected="true" aria-controls="panel">影响力榜</button>
+        <button class="tab" type="button" role="tab" id="tab-mom"
+                aria-selected="false" aria-controls="panel">增长榜</button>
+      </div>
+      <div class="filters">
+        <input type="search" id="q" placeholder="搜索项目名或描述" aria-label="搜索项目">
+        <select id="cat" aria-label="按分类筛选"></select>
+      </div>
+    </div>
+    <p class="sub" id="panel-sub"></p>
+    <div class="scroll" id="panel" role="tabpanel"></div>
+  </section>
+
+  <details id="glossary">
+    <summary>标记含义，以及这份榜单看不到什么</summary>
+    <dl>
+      <dt>suspect-stars</dt>
+      <dd>star 超过 5000，但每 100 个 star 还不到 1 个 fork。真实项目会被 fork：
+        langchain 约 0.10，pytorch 约 0.27，而买来的 star 通常低于 0.01。
+        命中后分数打 55 折。</dd>
+      <dt>solo-project</dt>
+      <dd>几千 star 但贡献者不超过 2 人。不一定是坏事，但谈不上社区影响力。</dd>
+      <dt>no-license</dt>
+      <dd>没有许可证文件，别人法律上不能依赖它。</dd>
+      <dt>issue-backlog</dt>
+      <dd>未关闭 issue 超过 star 数的 8%。</dd>
+      <dt>too-new</dt>
+      <dd>建仓不足 21 天，还看不出来。</dd>
+      <dt>not-software</dt>
+      <dd>awesome-list、教程、路线图。已从榜单剔除——它们靠 star 赢，但不是软件。</dd>
+      <dt>缺失的信号</dt>
+      <dd>贡献者数和 90 天提交活跃度需要单仓库 API 调用。没取到时
+        <code>community</code> 会退化成用 fork 数代替，页面顶部会标注。</dd>
+      <dt>完全没测的</dt>
+      <dd>依赖数（dependents）是 GitHub 上最强的影响力信号，但 REST API 不提供，
+        只能爬 HTML 页面，太脆。更好的替代是各语言包管理器的下载量。</dd>
+    </dl>
+  </details>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---- state ------------------------------------------------------------
+  var S = {
+    rows: [], run: null, tab: 'inf', q: '', cat: '',
+    hidden: {},                       // category -> true when legend-toggled off
+    sort: {inf: null, mom: null},     // {key, dir} once a column is clicked
+  };
+
+  var PALETTE = ['--c1', '--c2', '--c3', '--c4', '--c5', '--c6', '--c7',
+                 '--c8', '--c9'];
+  var colourOf = {};
+
+  var BAD_FLAGS = {'suspect-stars': 1, 'not-software': 1, archived: 1, dormant: 1};
+
+  // ---- formatting -------------------------------------------------------
+  function k(n) {
+    if (n === null || n === undefined || isNaN(n)) return '—';
+    var v = Number(n);
+    if (Math.abs(v) >= 1e6) return (v / 1e6).toFixed(1) + 'M';
+    if (Math.abs(v) >= 1e4) return Math.round(v / 1e3) + 'k';
+    if (Math.abs(v) >= 1e3) return (v / 1e3).toFixed(1) + 'k';
+    return String(Math.round(v));
+  }
+  function int(n) {
+    return (n === null || n === undefined) ? '—' : Number(n).toLocaleString('zh-CN');
+  }
+  function dayText(iso) {
+    if (!iso) return '未知时间';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '未知时间';
+    return d.getFullYear() + ' 年 ' + (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日';
+  }
+  function hoursSince(iso) {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return null;
+    return (Date.now() - d.getTime()) / 36e5;
+  }
+  // textContent everywhere: these values come from GitHub, never trusted as markup
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined && text !== null) n.textContent = text;
+    return n;
+  }
+
+  // ---- data -------------------------------------------------------------
+  function visible(key) {
+    var q = S.q.trim().toLowerCase();
+    return S.rows.filter(function (r) {
+      if (r[key] === null || r[key] === undefined) return false;
+      if (S.cat && r.category !== S.cat) return false;
+      if (S.hidden[r.category]) return false;
+      if (!q) return true;
+      return (r.full_name || '').toLowerCase().indexOf(q) >= 0 ||
+             (r.description || '').toLowerCase().indexOf(q) >= 0;
+    });
+  }
+
+  function sorted(key) {
+    var rows = visible(key);
+    var s = S.sort[S.tab];
+    if (!s) return rows.sort(function (a, b) { return a[key] - b[key]; });
+    return rows.sort(function (a, b) {
+      var x = a[s.key], y = b[s.key];
+      if (x === null || x === undefined) return 1;
+      if (y === null || y === undefined) return -1;
+      if (typeof x === 'string' || typeof y === 'string') {
+        var c = String(x).localeCompare(String(y));
+        return s.dir === 'asc' ? c : -c;
+      }
+      return s.dir === 'asc' ? x - y : y - x;
+    });
+  }
+
+  // ---- header -----------------------------------------------------------
+  function drawHeader() {
+    var run = S.run || {};
+    var lede = document.getElementById('lede');
+    lede.replaceChildren();
+    lede.append(
+      document.createTextNode('从 '), el('b', null, int(run.candidates)),
+      document.createTextNode(' 个 AI 仓库里选出 '), el('b', null, int(run.ranked)),
+      document.createTextNode(' 个排名，共 '), el('b', null, int(run.search_requests)),
+      document.createTextNode(' 次 GitHub 搜索。star 做了对数压缩、权重只占约四分之一' +
+        '——它是滞后且可以刷的指标；fork 活跃度、push 新鲜度和增长承担其余权重。'));
+
+    var row = document.getElementById('meta-row');
+    row.replaceChildren();
+    var age = hoursSince(run.generated_at);
+    var stale = age !== null && age > 48;
+    var when = el('span', stale ? 'stale' : null,
+      '数据采集于 ' + dayText(run.generated_at) +
+      (stale ? '（已超过两天，定时任务可能没跑）' : ''));
+    var a1 = el('a', null, '手动刷新：去 Actions 点 Run workflow');
+    a1.href = 'https://github.com/Techventor/ai/actions/workflows/radar.yml';
+    a1.target = '_blank'; a1.rel = 'noopener';
+    var a2 = el('a', null, '源码与算法说明');
+    a2.href = 'https://github.com/Techventor/ai';
+    a2.target = '_blank'; a2.rel = 'noopener';
+    row.append(when, a1, a2, el('span', null, '每天自动更新'));
+
+    var note = document.getElementById('note');
+    note.replaceChildren();
+    if (run.momentum_source === 'lifetime') {
+      note.append(
+        el('strong', null, '第二份榜单现在还不是「势头」。'),
+        document.createTextNode(' 只有一份快照时没有可比对的历史，' +
+          '所以增速只能用生涯平均（star 总数 ÷ 建仓天数）。那是出道速度而不是当下速度，' +
+          '并且天然偏向年轻仓库——它们的分母小。在这种模式下有两个信号不含任何信息（'),
+        el('code', null, run.dropped_signals || 'none'),
+        document.createTextNode('），已被丢弃而不是当成 0 计入，权重重新分配给其余信号。' +
+          '明天再跑一次，这里就会变成真实的周环比。'));
+      note.hidden = false;
+    } else if (run.degraded) {
+      note.append(
+        el('strong', null, '本轮缺少深度信号。'),
+        document.createTextNode(' 贡献者数和提交活跃度没取到，' +
+          'community 这一项退化成用 fork 数代替。榜单内部仍可比较，但没有贡献者数据。'));
+      note.hidden = false;
+    } else {
+      note.hidden = true;
+    }
+
+    var tiles = [
+      [int(run.candidates), '个 AI 仓库被发现'],
+      [int(run.ranked), '个进入两份榜单'],
+      [int(run.in_both_rankings), '个同时上两份榜'],
+      [int(run.flagged), '个带有健康度标记'],
+    ];
+    var box = document.getElementById('tiles');
+    box.replaceChildren();
+    tiles.forEach(function (t) {
+      var card = el('div', 'tile');
+      card.append(el('span', 'tile-n', t[0]), el('span', 'tile-l', t[1]));
+      box.append(card);
+    });
+  }
+
+  // ---- categories and legend -------------------------------------------
+  function categories() {
+    var seen = {};
+    S.rows.forEach(function (r) { if (r.category) seen[r.category] = 1; });
+    return Object.keys(seen).sort();
+  }
+
+  function assignColours() {
+    categories().forEach(function (c, i) {
+      colourOf[c] = 'var(' + PALETTE[i % PALETTE.length] + ')';
+    });
+  }
+
+  function drawLegend() {
+    var box = document.getElementById('legend');
+    box.replaceChildren();
+    categories().forEach(function (c) {
+      var off = !!S.hidden[c];
+      var b = el('button', 'key' + (off ? ' dim' : ''));
+      b.type = 'button';
+      b.setAttribute('aria-pressed', off ? 'false' : 'true');
+      var dot = el('span', 'dot');
+      dot.style.background = colourOf[c];
+      b.append(dot, document.createTextNode(c));
+      b.onclick = function () {
+        if (S.hidden[c]) delete S.hidden[c]; else S.hidden[c] = true;
+        drawLegend(); drawChart(); drawTable();
+      };
+      box.append(b);
+    });
+  }
+
+  // ---- scatter ----------------------------------------------------------
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+  function svgEl(tag, attrs) {
+    var n = document.createElementNS(SVG_NS, tag);
+    for (var a in attrs) if (Object.prototype.hasOwnProperty.call(attrs, a)) {
+      n.setAttribute(a, attrs[a]);
+    }
+    return n;
+  }
+
+  // Ticks at 1, 2, 5 per decade -- enough labels to read a log axis without
+  // crowding, and every label lands on a round number.
+  function logTicks(lo, hi) {
+    var out = [];
+    var e = Math.floor(Math.log10(lo));
+    for (; e <= Math.ceil(Math.log10(hi)); e++) {
+      [1, 2, 5].forEach(function (m) {
+        var v = m * Math.pow(10, e);
+        if (v >= lo * 0.95 && v <= hi * 1.05) out.push(v);
+      });
+    }
+    return out;
+  }
+
+  function drawChart() {
+    var host = document.getElementById('chart');
+    var tip = document.getElementById('tip');
+    host.replaceChildren();
+    tip.style.opacity = '0';
+
+    var data = visible('influence_score').filter(function (r) {
+      return r.stars > 0 && r.weekly_stars > 0;
+    });
+    if (!data.length) {
+      host.append(el('p', 'msg', '当前筛选条件下没有可画的项目。'));
+      return;
+    }
+
+    var W = Math.max(host.clientWidth || 640, 280);
+    var H = Math.max(Math.min(W * 0.56, 430), 280);
+    var narrow = W < 460;
+
+    var xs = data.map(function (r) { return r.stars; });
+    var ys = data.map(function (r) { return r.weekly_stars; });
+    var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
+    var y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+    var xt = logTicks(x0, x1), yt = logTicks(y0, y1);
+
+    // Left margin is measured from the widest tick label as actually
+    // rendered: the data decides how wide "470k" or "1.2M" is.
+    var probe = svgEl('svg', {width: 0, height: 0,
+      style: 'position:absolute;visibility:hidden'});
+    host.append(probe);
+    var widest = 0;
+    yt.forEach(function (v) {
+      var t = svgEl('text', {}); t.textContent = k(v);
+      probe.append(t);
+      widest = Math.max(widest, t.getComputedTextLength());
+    });
+    probe.remove();
+
+    var m = {t: 14, r: 16, b: 46, l: Math.ceil(widest) + 42};
+    var iw = W - m.l - m.r, ih = H - m.t - m.b;
+    var lx0 = Math.log10(x0), lx1 = Math.log10(x1);
+    var ly0 = Math.log10(y0), ly1 = Math.log10(y1);
+    var px = function (v) {
+      return m.l + (lx1 === lx0 ? iw / 2
+        : (Math.log10(v) - lx0) / (lx1 - lx0) * iw);
+    };
+    var py = function (v) {
+      return m.t + ih - (ly1 === ly0 ? ih / 2
+        : (Math.log10(v) - ly0) / (ly1 - ly0) * ih);
+    };
+
+    var svg = svgEl('svg', {
+      viewBox: '0 0 ' + W + ' ' + H, role: 'img',
+      'aria-label': data.length + ' 个 AI 项目的散点图：横轴为 star 总数，' +
+        '纵轴为每周新增 star，两轴均为对数刻度，颜色区分类别。',
+    });
+
+    yt.forEach(function (v) {
+      svg.append(svgEl('line', {class: 'grid-line', x1: m.l, x2: W - m.r,
+        y1: py(v), y2: py(v)}));
+      var t = svgEl('text', {x: m.l - 8, y: py(v) + 4, 'text-anchor': 'end'});
+      t.textContent = k(v);
+      svg.append(t);
+    });
+
+    svg.append(svgEl('line', {class: 'axis-line', x1: m.l, x2: W - m.r,
+      y1: m.t + ih, y2: m.t + ih}));
+    var step = narrow ? Math.ceil(xt.length / 4) : 1;
+    xt.forEach(function (v, i) {
+      if (i % step) return;
+      svg.append(svgEl('line', {class: 'axis-line', x1: px(v), x2: px(v),
+        y1: m.t + ih, y2: m.t + ih + 4}));
+      var t = svgEl('text', {x: px(v), y: m.t + ih + 17, 'text-anchor': 'middle'});
+      t.textContent = k(v);
+      svg.append(t);
+    });
+
+    var xl = svgEl('text', {x: m.l + iw / 2, y: H - 6, 'text-anchor': 'middle'});
+    xl.textContent = 'star 总数（对数）';
+    svg.append(xl);
+    var yl = svgEl('text', {
+      transform: 'translate(14,' + (m.t + ih / 2) + ') rotate(-90)',
+      'text-anchor': 'middle'});
+    yl.textContent = '每周新增 star（对数）';
+    svg.append(yl);
+
+    function show(ev, r) {
+      tip.replaceChildren();
+      tip.append(el('b', null, r.full_name), el('span', null,
+        int(r.stars) + ' star · 每周 +' + k(r.weekly_stars) + ' · ' +
+        r.category + ' · fork:star ' + Number(r.fork_ratio).toFixed(3)));
+      var card = host.parentElement.getBoundingClientRect();
+      tip.style.opacity = '1';
+      var left = ev.clientX - card.left + 12;
+      var top = ev.clientY - card.top - tip.offsetHeight - 12;
+      // keep it inside the card
+      tip.style.left = Math.max(4, Math.min(left, card.width - tip.offsetWidth - 4)) + 'px';
+      tip.style.top = Math.max(4, top) + 'px';
+    }
+    function hide() { tip.style.opacity = '0'; }
+
+    data.forEach(function (r) {
+      var top10 = r.rank_influence && r.rank_influence <= 10;
+      var c = svgEl('circle', {
+        cx: px(r.stars), cy: py(r.weekly_stars), r: top10 ? 6.5 : 4.5,
+        fill: colourOf[r.category] || 'var(--c9)', 'fill-opacity': 0.72,
+        stroke: 'var(--panel)', 'stroke-width': 1, tabindex: '0',
+        style: 'cursor:pointer',
+      });
+      c.addEventListener('pointerenter', function (e) { show(e, r); });
+      c.addEventListener('pointermove', function (e) { show(e, r); });
+      c.addEventListener('pointerleave', hide);
+      c.addEventListener('focus', function () {
+        var b = c.getBoundingClientRect();
+        show({clientX: b.left + b.width / 2, clientY: b.top}, r);
+      });
+      c.addEventListener('blur', hide);
+      svg.append(c);
+    });
+
+    host.append(svg);
+  }
+
+  // ---- tables -----------------------------------------------------------
+  var COLUMNS = {
+    inf: [
+      {key: 'rank_influence', label: '#', num: true, fmt: int},
+      {key: 'full_name', label: '项目', kind: 'name'},
+      {key: 'influence_score', label: '得分', num: true,
+       fmt: function (v) { return v == null ? '—' : Number(v).toFixed(1); }},
+      {key: 'stars', label: 'star', num: true, fmt: k},
+      {key: 'weekly_stars', label: '每周', num: true,
+       fmt: function (v) { return '+' + k(v); }},
+      {key: 'fork_ratio', label: 'fork:star', num: true,
+       fmt: function (v) { return v == null ? '—' : Number(v).toFixed(3); }},
+      {key: 'category', label: '分类', kind: 'cat'},
+      {key: 'description', label: '是什么', kind: 'what'},
+    ],
+    mom: [
+      {key: 'rank_momentum', label: '#', num: true, fmt: int},
+      {key: 'full_name', label: '项目', kind: 'name'},
+      {key: 'momentum_score', label: '得分', num: true,
+       fmt: function (v) { return v == null ? '—' : Number(v).toFixed(1); }},
+      {key: 'weekly_stars', label: '每周', num: true,
+       fmt: function (v) { return '+' + k(v); }},
+      {key: 'stars', label: 'star', num: true, fmt: k},
+      {key: 'age_days', label: '天数', num: true,
+       fmt: function (v) { return v == null ? '—' : int(Math.round(v)); }},
+      {key: 'category', label: '分类', kind: 'cat'},
+      {key: 'description', label: '是什么', kind: 'what'},
+    ],
+  };
+
+  function cellFor(col, r) {
+    if (col.kind === 'name') {
+      var td = el('td', 'nm');
+      var a = el('a', null, r.full_name);
+      a.href = r.url || '#'; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      td.append(a);
+      return td;
+    }
+    if (col.kind === 'cat') {
+      var tdc = el('td');
+      var w = el('span', 'cat');
+      var dot = el('span', 'dot');
+      dot.style.background = colourOf[r.category] || 'var(--c9)';
+      w.append(dot, document.createTextNode(r.category || '—'));
+      tdc.append(w);
+      return tdc;
+    }
+    if (col.kind === 'what') {
+      var tdw = el('td', 'what');
+      var text = (r.description || '').trim();
+      tdw.append(document.createTextNode(
+        text.length > 104 ? text.slice(0, 103) + '…' : (text || '—')));
+      if (r.flags) {
+        var box = el('div');
+        r.flags.split(',').forEach(function (f) {
+          f = f.trim();
+          if (f) box.append(el('span', 'flag' + (BAD_FLAGS[f] ? ' bad' : ''), f));
+        });
+        tdw.append(box);
+      }
+      return tdw;
+    }
+    return el('td', col.num ? 'num' : null, col.fmt ? col.fmt(r[col.key]) : r[col.key]);
+  }
+
+  function drawTable() {
+    var host = document.getElementById('panel');
+    var cols = COLUMNS[S.tab];
+    var key = S.tab === 'inf' ? 'rank_influence' : 'rank_momentum';
+    var rows = sorted(key);
+
+    document.getElementById('panel-sub').textContent = S.tab === 'inf'
+      ? '按 star 对数值、社区广度、push 新鲜度、fork 活跃度和增长加权，' +
+        '再按「是否确实是 AI 项目」做闸门。同一个 owner 最多 3 个仓库，' +
+        '防止一家机构占满榜单。点列标题可以排序。'
+      : (S.run && S.run.momentum_source === 'lifetime'
+        ? '按 star 到账速度排序。读作「出道即爆发」，不是「现在在涨」——原因见上方说明。'
+        : '按近期 star 增速、增量占总量的比例，以及相对前一周期的加速度排序。');
+
+    host.replaceChildren();
+    if (!rows.length) {
+      host.append(el('p', 'msg', '没有项目符合当前筛选条件。'));
+      return;
+    }
+
+    var table = el('table');
+    var thead = el('thead');
+    var tr = el('tr');
+    var s = S.sort[S.tab];
+    cols.forEach(function (col) {
+      var th = el('th', col.num ? 'num' : null);
+      if (s && s.key === col.key) {
+        th.setAttribute('aria-sort', s.dir === 'asc' ? 'ascending' : 'descending');
+      }
+      var b = el('button', null, col.label);
+      b.type = 'button';
+      if (s && s.key === col.key) {
+        b.append(el('span', 'arrow', s.dir === 'asc' ? '▲' : '▼'));
+      }
+      b.onclick = function () {
+        var cur = S.sort[S.tab];
+        // Ranks and names read best ascending; counts and scores descending.
+        var firstDir = (col.key === 'full_name' || col.key === 'category' ||
+                        col.key.indexOf('rank_') === 0) ? 'asc' : 'desc';
+        S.sort[S.tab] = (cur && cur.key === col.key)
+          ? {key: col.key, dir: cur.dir === 'asc' ? 'desc' : 'asc'}
+          : {key: col.key, dir: firstDir};
+        drawTable();
+      };
+      th.append(b);
+      tr.append(th);
+    });
+    thead.append(tr);
+    var tbody = el('tbody');
+    rows.forEach(function (r) {
+      var row = el('tr');
+      cols.forEach(function (col) { row.append(cellFor(col, r)); });
+      tbody.append(row);
+    });
+    table.append(thead, tbody);
+    host.append(table);
+  }
+
+  // ---- wiring -----------------------------------------------------------
+  function selectTab(which) {
+    S.tab = which;
+    document.getElementById('tab-inf')
+      .setAttribute('aria-selected', which === 'inf' ? 'true' : 'false');
+    document.getElementById('tab-mom')
+      .setAttribute('aria-selected', which === 'mom' ? 'true' : 'false');
+    drawTable();
+  }
+
+  function drawAll() {
+    assignColours();
+    drawHeader();
+    drawLegend();
+    drawChart();
+    var sel = document.getElementById('cat');
+    sel.replaceChildren();
+    sel.append(new Option('全部分类', ''));
+    categories().forEach(function (c) { sel.append(new Option(c, c)); });
+    sel.value = S.cat;
+    // The momentum tab is only momentum once there is history to diff.
+    document.getElementById('tab-mom').textContent =
+      (S.run && S.run.momentum_source !== 'lifetime') ? '势头榜' : '增长榜';
+    drawTable();
+  }
+
+  document.getElementById('tab-inf').onclick = function () { selectTab('inf'); };
+  document.getElementById('tab-mom').onclick = function () { selectTab('mom'); };
+  document.getElementById('q').oninput = function (e) {
+    S.q = e.target.value; drawChart(); drawTable();
+  };
+  document.getElementById('cat').onchange = function (e) {
+    S.cat = e.target.value; drawChart(); drawTable();
+  };
+
+  var themeBtn = document.getElementById('theme-btn');
+  themeBtn.onclick = function () {
+    var cur = document.documentElement.getAttribute('data-theme');
+    var dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var next = cur ? (cur === 'dark' ? 'light' : 'dark') : (dark ? 'light' : 'dark');
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem('radar-theme', next); } catch (e) { /* private mode */ }
+    drawChart();
+  };
+  try {
+    var saved = localStorage.getItem('radar-theme');
+    if (saved === 'dark' || saved === 'light') {
+      document.documentElement.setAttribute('data-theme', saved);
+    }
+  } catch (e) { /* private mode, or site data blocked */ }
+
+  var resizeTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(drawChart, 150);
+  });
+
+  // ---- load -------------------------------------------------------------
+  function fail(message, detail) {
+    document.getElementById('lede').textContent = message;
+    var host = document.getElementById('panel');
+    host.replaceChildren(el('p', 'msg err', detail));
+    document.getElementById('chart').replaceChildren();
+  }
+
+  Promise.all([
+    fetch('./radar-rows.json', {cache: 'no-cache'}).then(function (r) {
+      if (!r.ok) throw new Error('radar-rows.json: HTTP ' + r.status);
+      return r.json();
+    }),
+    fetch('./radar-run.json', {cache: 'no-cache'}).then(function (r) {
+      if (!r.ok) throw new Error('radar-run.json: HTTP ' + r.status);
+      return r.json();
+    }),
+  ]).then(function (res) {
+    S.rows = Array.isArray(res[0]) ? res[0] : [];
+    S.run = Array.isArray(res[1]) ? res[1][0] : res[1];
+    if (!S.rows.length) {
+      fail('数据文件里没有记录。', '扫描可能失败了，去 Actions 看一下运行日志。');
+      return;
+    }
+    drawAll();
+  }).catch(function (err) {
+    fail('数据没能载入。',
+      '读取数据文件失败：' + err.message +
+      '。如果这是刚部署的页面，等定时任务跑完一次再看。');
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,23 +1,28 @@
 #!/usr/bin/env python3
 """Flatten a radar report into one flat record per repository.
 
-    python3 scripts/flatten.py reports/latest.json rows.json
+    python3 scripts/flatten.py reports/latest.json site/radar-rows.json \
+        --run-out site/radar-run.json
 
 The report groups repos under "influence" and "momentum", and a repo can
-appear in both. Anything that reads tabular data -- a dashboard, a
+appear in both. Anything that reads tabular data -- a web page, a
 spreadsheet, a notebook -- wants the opposite shape: one row per repo,
 scalars only, with each ranking as its own column. Nested values (topics,
 flags, component scores) are flattened to strings or separate columns, so
 nothing needs a second parsing pass.
 
-Output is a JSON array, which loads as rows directly. CSV is avoided on
-purpose: descriptions contain commas and naive splitters mangle them.
+With --run-out it also writes a one-row file describing the scan itself,
+so a page can state how its numbers were gathered instead of hardcoding
+figures that go stale.
+
+Output is JSON, not CSV: descriptions contain commas and naive splitters
+mangle them.
 """
 
 from __future__ import annotations
 
+import argparse
 import json
-import sys
 from pathlib import Path
 
 # Component scores worth exposing as their own columns.
@@ -75,18 +80,55 @@ def flatten(report: dict) -> list[dict]:
     return out
 
 
-def main(argv: list[str]) -> int:
-    if len(argv) != 3:
-        print(__doc__)
-        return 2
-    report = json.loads(Path(argv[1]).read_text(encoding="utf-8"))
+def run_summary(report: dict, rows: list[dict]) -> list[dict]:
+    """One row describing the scan, so a page can cite it rather than
+    hardcode figures that drift out of date."""
+    meta = report.get("meta", {})
+    return [{
+        "generated_at": report.get("generated_at"),
+        "candidates": meta.get("candidates"),
+        "search_requests": meta.get("queries") or 0,
+        "ranked": len(rows),
+        "in_both_rankings": sum(
+            1 for r in rows if r["rank_influence"] and r["rank_momentum"]),
+        "flagged": sum(1 for r in rows if r["flags"]),
+        "momentum_source": meta.get("momentum_source"),
+        "dropped_signals":
+            ", ".join(meta.get("dropped_signals") or []) or "none",
+        "enriched": meta.get("enriched") or 0,
+        "degraded": bool(meta.get("degraded")),
+        "min_stars": meta.get("min_stars"),
+    }]
+
+
+def main() -> int:
+    p = argparse.ArgumentParser(
+        description="Flatten a radar report into one row per repository.")
+    p.add_argument("report", help="a radar JSON report, e.g. reports/latest.json")
+    p.add_argument("rows_out", help="where to write the flat row array")
+    p.add_argument("--run-out", default=None,
+                   help="also write a one-row summary of the scan here")
+    args = p.parse_args()
+
+    report = json.loads(Path(args.report).read_text(encoding="utf-8"))
     rows = flatten(report)
-    Path(argv[2]).write_text(json.dumps(rows, ensure_ascii=False, indent=1),
-                             encoding="utf-8")
+
+    out = Path(args.rows_out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(rows, ensure_ascii=False, indent=1),
+                   encoding="utf-8")
+    print(f"{len(rows)} rows -> {out}")
+
+    if args.run_out:
+        run_out = Path(args.run_out)
+        run_out.parent.mkdir(parents=True, exist_ok=True)
+        run_out.write_text(
+            json.dumps(run_summary(report, rows), ensure_ascii=False, indent=1),
+            encoding="utf-8")
+        print(f"1 run summary -> {run_out}")
 
     meta = report.get("meta", {})
     both = sum(1 for r in rows if r["rank_influence"] and r["rank_momentum"])
-    print(f"{len(rows)} rows -> {argv[2]}")
     print(f"  {both} appear in both rankings")
     print(f"  candidates scanned: {meta.get('candidates')}, "
           f"momentum source: {meta.get('momentum_source')}")
@@ -94,4 +136,4 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main(sys.argv))
+    raise SystemExit(main())

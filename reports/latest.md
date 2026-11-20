@@ -1,6 +1,6 @@
-# AI open-source radar — 2026-11-20 03:24 UTC
+# AI open-source radar — 2026-11-20 03:43 UTC
 
-Scanned **4337** candidate repositories from **0** search requests; enriched **0**.
+Scanned **4337** candidate repositories from **184** search requests; enriched **0**.
 
 > **Degraded run.** Per-repo endpoints (contributors, commit activity) were unavailable, so `community` falls back to forks and `alive` to push recency. Scores are still comparable within this run, but contributor counts are absent.
 
@@ -40,7 +40,7 @@ Durable weight: popularity, community breadth, liveness and fork activity, with 
 | 24 | [QuantumNous/new-api](https://github.com/QuantumNous/new-api) | 91.7 | 52.2k | +331/wk | - | other | Open-source AI gateway. Self-hosted LLM gateway with OpenAI-, Claude-…  |
 | 25 | [milvus-io/milvus](https://github.com/milvus-io/milvus) | 91.7 | 46.7k | +125/wk | - | rag/retrieval | Milvus is a high-performance, cloud-native vector database built for …  |
 | 26 | [AstrBotDevs/AstrBot](https://github.com/AstrBotDevs/AstrBot) | 91.6 | 47.2k | +229/wk | - | framework/sdk | AI Agent Assistant & development framework that integrates lots of IM…  |
-| 27 | [huggingface/diffusers](https://github.com/huggingface/diffusers) | 91.6 | 35.0k | +150/wk | - | generative-media | 🤗 Diffusers: State-of-the-art diffusion models for image, video, and …  |
+| 27 | [huggingface/diffusers](https://github.com/huggingface/diffusers) | 91.5 | 35.0k | +150/wk | - | generative-media | 🤗 Diffusers: State-of-the-art diffusion models for image, video, and …  |
 | 28 | [aaif-goose/goose](https://github.com/aaif-goose/goose) | 91.5 | 56.8k | +486/wk | - | agent | an open source, extensible AI agent that goes beyond code suggestions…  |
 | 29 | [langgenius/dify](https://github.com/langgenius/dify) | 91.5 | 161.5k | +858/wk | - | rag/retrieval | Build Agentic workflows, RAG pipelines, with rich AI model and tool s… `no-license` |
 | 30 | [sgl-project/sglang](https://github.com/sgl-project/sglang) | 91.5 | 38.9k | +260/wk | - | framework/sdk | SGLang is a high-performance serving framework for large language mod… `issue-backlog` |
@@ -48,16 +48,16 @@ Durable weight: popularity, community breadth, liveness and fork activity, with 
 | 32 | [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) | 91.4 | 151.8k | +3.0k/wk | - | dev-tools | An AI skill that provides design intelligence for building profession…  |
 | 33 | [harry0703/MoneyPrinterTurbo](https://github.com/harry0703/MoneyPrinterTurbo) | 91.3 | 144.7k | +1.0k/wk | - | generative-media | 利用 AI 大模型和自动化工作流，根据主题或关键词一键生成高清短视频。Generate HD short videos from a to…  |
 | 34 | [CherryHQ/cherry-studio](https://github.com/CherryHQ/cherry-studio) | 91.3 | 53.7k | +413/wk | - | inference/serving | Your AI workspace for models, agents, and productivity.  |
-| 35 | [siyuan-note/siyuan](https://github.com/siyuan-note/siyuan) | 91.2 | 47.3k | +146/wk | - | agent | An open-source, privacy-first, self-hosted knowledge workspace where …  |
-| 36 | [alibaba/nacos](https://github.com/alibaba/nacos) | 91.2 | 33.5k | +76/wk | - | agent | an easy-to-use dynamic service discovery, configuration and service m…  |
+| 35 | [alibaba/nacos](https://github.com/alibaba/nacos) | 91.2 | 33.5k | +76/wk | - | agent | an easy-to-use dynamic service discovery, configuration and service m…  |
+| 36 | [siyuan-note/siyuan](https://github.com/siyuan-note/siyuan) | 91.2 | 47.3k | +146/wk | - | agent | An open-source, privacy-first, self-hosted knowledge workspace where …  |
 | 37 | [paperclipai/paperclip](https://github.com/paperclipai/paperclip) | 91.1 | 115.2k | +3.1k/wk | - | agent | The open-source app everyone uses to manage agents at work  |
 | 38 | [gogs/gogs](https://github.com/gogs/gogs) | 91.1 | 48.0k | +72/wk | - | agent | The painless way to host your own Git service  |
 | 39 | [router-for-me/CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) | 91.0 | 59.0k | +816/wk | - | other | Wrap Antigravity, ChatGPT Codex, Claude Code, Grok Build, Muse Code, …  |
 | 40 | [cheaper-inference/OmniRoute](https://github.com/cheaper-inference/OmniRoute) | 91.0 | 89.0k | +2.2k/wk | - | dev-tools | Never stop coding. Free MIT AI gateway: one endpoint, 375 providers (…  |
 | 41 | [zhayujie/CowAgent](https://github.com/zhayujie/CowAgent) | 91.0 | 48.0k | +215/wk | - | agent | Open-source personal AI assistant & Agent Harness. Plans tasks, runs …  |
 | 42 | [CopilotKit/CopilotKit](https://github.com/CopilotKit/CopilotKit) | 91.0 | 38.8k | +218/wk | - | dev-tools | The Frontend Stack for Agents & Generative UI. React, Angular, Mobile…  |
-| 43 | [huggingface/pytorch-image-models](https://github.com/huggingface/pytorch-image-models) | 91.0 | 37.3k | +92/wk | - | training/tuning | The largest collection of PyTorch image encoders / backbones. Includi…  |
-| 44 | [hiyouga/LlamaFactory](https://github.com/hiyouga/LlamaFactory) | 91.0 | 76.1k | +419/wk | - | inference/serving | Unified Efficient Fine-Tuning of 100+ LLMs & VLMs (ACL 2024)  |
+| 43 | [hiyouga/LlamaFactory](https://github.com/hiyouga/LlamaFactory) | 91.0 | 76.1k | +419/wk | - | inference/serving | Unified Efficient Fine-Tuning of 100+ LLMs & VLMs (ACL 2024)  |
+| 44 | [huggingface/pytorch-image-models](https://github.com/huggingface/pytorch-image-models) | 91.0 | 37.3k | +92/wk | - | training/tuning | The largest collection of PyTorch image encoders / backbones. Includi…  |
 | 45 | [chatboxai/chatbox](https://github.com/chatboxai/chatbox) | 90.9 | 42.4k | +219/wk | - | inference/serving | Powerful AI Client  |
 | 46 | [1Panel-dev/1Panel](https://github.com/1Panel-dev/1Panel) | 90.8 | 37.5k | +166/wk | - | inference/serving | 🔥 1Panel is a modern, open-source Linux server management panel and a…  |
 | 47 | [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify) | 90.8 | 150.7k | +4.6k/wk | - | rag/retrieval | Turn any codebase, with its docs, SQL schemas, configs, and PDFs, int…  |
@@ -106,21 +106,21 @@ Average stars per week over each project's whole life. Young repos dominate this
 | 33 | [hypit-ai/hypit](https://github.com/hypit-ai/hypit) | 98.4 | 30.8k | +1.9k/wk | - | generative-media | Clone any viral video with AI agents. Not just a script, the whole wo… `no-license` |
 | 34 | [herdrdev/herdr](https://github.com/herdrdev/herdr) | 98.3 | 51.9k | +1.5k/wk | - | dev-tools | the runtime your coding agents live on  |
 | 35 | [ollama/ollama](https://github.com/ollama/ollama) | 98.3 | 187.7k | +1.1k/wk | - | inference/serving | Get up and running with Kimi, GLM, MiniMax, DeepSeek, gpt-oss, Qwen, …  |
-| 36 | [Significant-Gravitas/AutoGPT](https://github.com/Significant-Gravitas/AutoGPT) | 98.3 | 188.1k | +979/wk | - | agent | AutoGPT is the vision of accessible AI for everyone, to use and to bu… `no-license` |
-| 37 | [bytedance/deer-flow](https://github.com/bytedance/deer-flow) | 98.3 | 85.5k | +1.1k/wk | - | agent | An open-source long-horizon SuperAgent harness that researches, codes…  |
+| 36 | [bytedance/deer-flow](https://github.com/bytedance/deer-flow) | 98.3 | 85.5k | +1.1k/wk | - | agent | An open-source long-horizon SuperAgent harness that researches, codes…  |
+| 37 | [Significant-Gravitas/AutoGPT](https://github.com/Significant-Gravitas/AutoGPT) | 98.3 | 188.1k | +979/wk | - | agent | AutoGPT is the vision of accessible AI for everyone, to use and to bu… `no-license` |
 | 38 | [wangzan101/Mika](https://github.com/wangzan101/Mika) | 98.3 | 9.2k | +3.0k/wk | - | agent | An on-device AI agent for Android that operates apps and the web to g…  |
 | 39 | [ruvnet/ruflo](https://github.com/ruvnet/ruflo) | 98.3 | 82.1k | +1.1k/wk | - | rag/retrieval | 🌊 The original agent harness. Deploy intelligent multi-player swarms,…  |
 | 40 | [vectorize-io/hindsight](https://github.com/vectorize-io/hindsight) | 98.2 | 62.1k | +1.1k/wk | - | agent | Hindsight: Agent Memory That Learns  |
-| 41 | [Twigpine/openclaude](https://github.com/Twigpine/openclaude) | 98.2 | 34.4k | +1.0k/wk | - | agent | runs anywhere. uses anything `no-license` |
-| 42 | [browser-use/browser-use](https://github.com/browser-use/browser-use) | 98.2 | 121.5k | +1.1k/wk | - | framework/sdk | Open-source Python library for AI browser agents, plus Browser Use Cl…  |
+| 41 | [browser-use/browser-use](https://github.com/browser-use/browser-use) | 98.2 | 121.5k | +1.1k/wk | - | framework/sdk | Open-source Python library for AI browser agents, plus Browser Use Cl…  |
+| 42 | [Twigpine/openclaude](https://github.com/Twigpine/openclaude) | 98.2 | 34.4k | +1.0k/wk | - | agent | runs anywhere. uses anything `no-license` |
 | 43 | [Imbad0202/academic-research-skills](https://github.com/Imbad0202/academic-research-skills) | 98.1 | 57.8k | +1.5k/wk | - | ops/eval | Academic Research Skills for Claude Code: research → write → review →… `no-license` |
 | 44 | [virgiliojr94/book-to-skill](https://github.com/virgiliojr94/book-to-skill) | 98.1 | 38.5k | +1.3k/wk | - | rag/retrieval | Turn any technical book PDF into a Claude Code skill — ready to study…  |
-| 45 | [harry0703/MoneyPrinterTurbo](https://github.com/harry0703/MoneyPrinterTurbo) | 98.1 | 144.7k | +1.0k/wk | - | generative-media | 利用 AI 大模型和自动化工作流，根据主题或关键词一键生成高清短视频。Generate HD short videos from a to…  |
+| 45 | [harry0703/MoneyPrinterTurbo](https://github.com/harry0703/MoneyPrinterTurbo) | 98.0 | 144.7k | +1.0k/wk | - | generative-media | 利用 AI 大模型和自动化工作流，根据主题或关键词一键生成高清短视频。Generate HD short videos from a to…  |
 | 46 | [JuneYaooo/rea-video](https://github.com/JuneYaooo/rea-video) | 98.0 | 11.1k | +3.6k/wk | - | generative-media | Reverse-engineer any video, shot by shot: filmed, AI-generated or cod…  |
 | 47 | [open-webui/open-webui](https://github.com/open-webui/open-webui) | 98.0 | 159.1k | +977/wk | - | inference/serving | User-friendly AI Interface (Supports Ollama, OpenAI API, ...) `no-license` |
 | 48 | [DeusData/codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp) | 98.0 | 48.9k | +1.3k/wk | - | agent | Local code intelligence for developers and AI agents. Connect code, d…  |
 | 49 | [langgenius/dify](https://github.com/langgenius/dify) | 97.8 | 161.5k | +858/wk | - | rag/retrieval | Build Agentic workflows, RAG pipelines, with rich AI model and tool s… `no-license` |
-| 50 | [jub0t/Concat](https://github.com/jub0t/Concat) | 97.8 | 19.0k | +1.5k/wk | - | generative-media | Beta: The truly free, open-source, local-first, cross-platform video …  |
+| 50 | [HKUDS/Vibe-Trading](https://github.com/HKUDS/Vibe-Trading) | 97.8 | 38.5k | +1.2k/wk | - | agent | "Vibe-Trading: Your Personal Trading Agent"  |
 
 ## Top list by category
 

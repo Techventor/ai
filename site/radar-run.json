@@ -1,0 +1,15 @@
+[
+ {
+  "generated_at": "2026-11-20T03:43:43+00:00",
+  "candidates": 4337,
+  "search_requests": 184,
+  "ranked": 86,
+  "in_both_rankings": 14,
+  "flagged": 12,
+  "momentum_source": "lifetime",
+  "dropped_signals": "accel, rel_growth",
+  "enriched": 0,
+  "degraded": true,
+  "min_stars": null
+ }
+]
