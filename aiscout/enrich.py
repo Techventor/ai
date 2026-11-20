@@ -25,7 +25,10 @@ import datetime as dt
 import time
 from dataclasses import dataclass, field
 
+from . import config
 from .client import AccessDenied, GitHubClient, GitHubError
+
+CONTRIBUTOR_SATURATION = config.CONTRIBUTOR_SATURATION
 
 
 @dataclass
@@ -44,15 +47,31 @@ class Enricher:
 
     # --------------------------------------------------------------- parts
 
-    def contributors(self, full_name: str) -> int | None:
-        """Contributor count, from the pagination header."""
+    def contributors(self, full_name: str) -> tuple[int | None, bool]:
+        """(contributor count, whether that count is saturated).
+
+        GitHub resolves only the first 500 author email addresses to user
+        accounts; past that, contributors come back anonymous, and this call
+        excludes anonymous ones. So the count saturates somewhere below 500
+        however large the project really is -- a first scan put langchain
+        and transformers, which have thousands of contributors each, at 467
+        and 439, beside a 21k-star repo at 408.
+
+        Returning the saturation flag lets the scorer tie those repos
+        instead of ordering the top of the ranking by which of the first
+        500 addresses happened to resolve.
+        """
         resp = self.client.get(f"repos/{full_name}/contributors",
                                {"per_page": 1, "anon": "false"})
         last = resp.last_page
-        if last is not None:
-            return last
-        body = resp.body
-        return len(body) if isinstance(body, list) else None
+        if last is None:
+            body = resp.body
+            count = len(body) if isinstance(body, list) else None
+        else:
+            count = last
+        if count is None:
+            return None, False
+        return count, count >= CONTRIBUTOR_SATURATION
 
     def commit_activity(self, full_name: str) -> tuple[int | None, int | None]:
         """(commits in last 13 weeks, commits in the 13 weeks before that)."""
@@ -82,7 +101,9 @@ class Enricher:
         full_name = repo["full_name"]
         extra: dict = {"enriched": False}
         try:
-            extra["contributors"] = self.contributors(full_name)
+            count, saturated = self.contributors(full_name)
+            extra["contributors"] = count
+            extra["contributors_saturated"] = saturated
             recent, prior = self.commit_activity(full_name)
             extra["commits_90d"] = recent
             extra["commits_prior_90d"] = prior

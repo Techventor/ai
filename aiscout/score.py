@@ -268,8 +268,13 @@ class Scorer:
 
         # Community breadth: contributors when stage 2 ran, forks otherwise.
         if enriched:
+            # Clamp at the saturation point: above it the API's number says
+            # "many", not how many, and ranking those apart is noise. Equal
+            # values tie in percentile_ranks, so clamping makes them tie.
             cols["community"] = percentile_ranks(
-                [_log(r.get("contributors")) for r in repos])
+                [_log(min(r["contributors"], config.CONTRIBUTOR_SATURATION))
+                 if r.get("contributors") is not None else None
+                 for r in repos])
             cols["alive"] = percentile_ranks(
                 [_log(r.get("commits_90d")) if r.get("commits_90d") is not None
                  else r["_d"]["alive"] for r in repos])

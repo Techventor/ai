@@ -228,5 +228,6 @@ python3 -m http.server -d site 8000      # 然后开 http://localhost:8000
 
 - **"影响力"没有客观真值。** 权重是判断，不是测量。想调就改 `config.py` 里的 `WEIGHTS_INFLUENCE`
 - **依赖数（dependents）是最强的影响力信号，但 REST API 不提供。** 只能爬 `/network/dependents` HTML 页面，很脆，所以没做。真要加的话，建议改用各语言包管理器的下载量（PyPI / npm）
+- **贡献者数在 500 封顶。** GitHub 只解析前 500 个作者邮箱，超出的算匿名。所以 `transformers`（实际几千贡献者）只报 439。超过 `CONTRIBUTOR_SATURATION`（默认 400）的一律并列，避免排名被偶然因素左右——但这也意味着这个信号在大项目之间不再有区分度
 - **英文偏向。** topic 和关键词都是英文的，中文项目若只写中文描述，可能只能靠 topic 捞到
 - **第一次运行的势头榜不可信**，原因见上。跑够两次再看

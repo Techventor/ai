@@ -200,6 +200,13 @@ FLAG_RULES = {
     "issue_backlog_ratio": 0.08,    # open issues / stars
 }
 
+# Contributor counts at or above this are treated as "many", not as a
+# number. GitHub resolves only the first 500 author emails to accounts and
+# this call drops anonymous ones, so the count saturates below 500 however
+# large the project is. Scoring the raw figure ordered the top of the
+# ranking by which addresses happened to resolve.
+CONTRIBUTOR_SATURATION = 400
+
 # ---------------------------------------------------------------- limits ---
 
 DEFAULTS = {

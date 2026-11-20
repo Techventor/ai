@@ -410,6 +410,57 @@ def test_small_shard_is_one_request() -> None:
     check("all seven kept", len(d.repos) == 7, str(len(d.repos)))
 
 
+def test_contributor_saturation() -> None:
+    """A capped API number must not order the top of the ranking.
+
+    GitHub resolves only the first 500 author emails to accounts, and this
+    call drops anonymous contributors, so the count saturates below 500
+    however large the project is. A first real scan returned 467 for
+    langchain and 439 for transformers -- both have thousands -- beside 408
+    for a 21k-star repo. Scoring those apart ranked projects by which
+    addresses happened to resolve.
+    """
+    print("contributor saturation")
+    from aiscout import config
+    from aiscout.score import percentile_ranks, _log
+
+    cap = config.CONTRIBUTOR_SATURATION
+    counts = [12, 80, cap + 7, cap + 39, cap + 76]
+
+    raw = percentile_ranks([_log(v) for v in counts])
+    check("raw counts order the saturated repos apart",
+          len(set(raw[2:])) == 3, str(raw))
+
+    clamped = percentile_ranks([_log(min(v, cap)) for v in counts])
+    check("clamped counts tie them", len(set(clamped[2:])) == 1, str(clamped))
+    check("below the cap still discriminates",
+          clamped[0] < clamped[1] < clamped[2], str(clamped))
+
+
+def test_contributors_reports_saturation() -> None:
+    """The enricher flags a saturated count rather than hiding it."""
+    print("contributors saturation flag")
+    from aiscout.client import GitHubClient, Response
+    from aiscout.enrich import Enricher, CONTRIBUTOR_SATURATION
+
+    client = GitHubClient(backend="gh")
+    e = Enricher(client=client, verbose=False)
+
+    def fake(page):
+        link = '<https://api.github.com/x?per_page=1&page=%d>; rel="last"' % page
+        return Response(200, {"link": link}, [{}])
+
+    client.get = lambda path, params=None, **kw: fake(CONTRIBUTOR_SATURATION + 60)
+    count, saturated = e.contributors("o/big")
+    check("returns the raw count", count == CONTRIBUTOR_SATURATION + 60, str(count))
+    check("flags it as saturated", saturated is True, str(saturated))
+
+    client.get = lambda path, params=None, **kw: fake(31)
+    count, saturated = e.contributors("o/small")
+    check("a small count is not flagged",
+          count == 31 and saturated is False, f"{count}, {saturated}")
+
+
 def main() -> int:
     for fn in (test_percentiles, test_http_parsing, test_categories,
                test_momentum_baselines, test_momentum_deceleration,
@@ -417,6 +468,7 @@ def main() -> int:
                test_weight_renormalisation, test_teaching_repos_excluded,
                test_202_gives_up_quickly, test_enrichment_budget,
                test_sharding_request_count, test_small_shard_is_one_request,
+               test_contributor_saturation, test_contributors_reports_saturation,
                test_flags):
         fn()
     print()
