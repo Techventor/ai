@@ -72,13 +72,17 @@ class GitHubClient:
     backend: str = "auto"
     search_min_interval: float = 2.1
     max_retries: int = 5
+    # How long to wait for a 202 "statistic is being computed" before giving
+    # up on it. Kept tiny on purpose: see the 202 branch in get().
+    max_202_waits: int = 2
     timeout: int = 60
     verbose: bool = False
 
     _last_search: float = field(default=0.0, init=False)
     _session: object | None = field(default=None, init=False)
     stats: dict = field(default_factory=lambda: {"requests": 0, "retries": 0,
-                                                 "denied": 0, "slept": 0.0},
+                                                 "denied": 0, "slept": 0.0,
+                                                 "stats_unavailable": 0},
                         init=False)
 
     def __post_init__(self) -> None:
@@ -159,6 +163,7 @@ class GitHubClient:
     def get(self, path: str, params: dict | None = None,
             *, is_search: bool = False, allow_202: bool = False) -> Response:
         """GET with retries for rate limits, 202 stat builds and 5xx."""
+        waits_202 = 0
         for attempt in range(self.max_retries):
             if is_search:
                 wait = self.search_min_interval - (time.time() - self._last_search)
@@ -173,8 +178,17 @@ class GitHubClient:
                 return resp
 
             if status == 202 and allow_202:
-                # GitHub is computing the statistic; it is ready shortly.
-                self._sleep(3 + 3 * attempt, "202 stats warming up")
+                # GitHub answers 202 while it builds a repo's statistics, and
+                # across a few hundred repos a cold cache is the common case,
+                # not the exception. Waiting it out cost up to 30s each and
+                # then raised anyway -- minutes of sleeping per run, for a
+                # figure that is a nice-to-have. So wait briefly, then hand
+                # back the 202 and let the caller treat it as "no data".
+                if waits_202 >= self.max_202_waits:
+                    self.stats["stats_unavailable"] += 1
+                    return resp
+                waits_202 += 1
+                self._sleep(2 * waits_202, "202 stats warming up")
                 self.stats["retries"] += 1
                 continue
 

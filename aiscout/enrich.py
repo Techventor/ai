@@ -22,6 +22,7 @@ search-only signal set.
 from __future__ import annotations
 
 import datetime as dt
+import time
 from dataclasses import dataclass, field
 
 from .client import AccessDenied, GitHubClient, GitHubError
@@ -100,12 +101,34 @@ class Enricher:
             self.failed += 1
         return extra
 
-    def run(self, repos: list[dict], limit: int) -> list[dict]:
+    def run(self, repos: list[dict], limit: int,
+            budget_seconds: float = 1200.0) -> list[dict]:
+        """Enrich the shortlist, within a wall-clock budget.
+
+        Stage 1 is paced by a fixed search interval, so its cost is
+        predictable. Stage 2's is not: a repo whose statistics GitHub has
+        not cached costs several seconds more than one it has, and that is
+        decided per repo on the day. The budget keeps a slow afternoon from
+        turning into a timed-out job -- the repos it does not reach simply
+        keep their search-only signals, which is what every repo outside
+        the shortlist has anyway.
+        """
         shortlist = repos[:limit]
+        started = time.monotonic()
         self._log(f"\nStage 2: enriching top {len(shortlist)} repos "
-                  f"(~3 API requests each)")
+                  f"(~3 API requests each, {budget_seconds:.0f}s budget)")
+
         for i, repo in enumerate(shortlist, 1):
+            spent = time.monotonic() - started
+            if spent > budget_seconds:
+                self._log(f"  ! budget of {budget_seconds:.0f}s spent after "
+                          f"{i - 1} repos; the remaining "
+                          f"{len(shortlist) - i + 1} keep search-only "
+                          f"signals")
+                break
+
             repo.update(self.enrich_one(repo))
+
             if self.denied and self.ok == 0 and i >= 3:
                 self._log("  ! per-repo API access is denied in this "
                           "environment; skipping stage 2 entirely.\n"
@@ -113,7 +136,8 @@ class Enricher:
                 break
             if self.verbose and (i % 25 == 0 or i == len(shortlist)):
                 self._log(f"  enriched {i}/{len(shortlist)} "
-                          f"(ok={self.ok} failed={self.failed})")
+                          f"(ok={self.ok} failed={self.failed}, "
+                          f"{spent:.0f}s elapsed)")
         return repos
 
     @property

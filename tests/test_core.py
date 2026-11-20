@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import datetime as dt
 import os
+import time
 import sqlite3
 import sys
 import tempfile
@@ -277,11 +278,67 @@ def test_flags() -> None:
     check("no-license flagged", "no-license" in flags_for(unlicensed))
 
 
+def test_202_gives_up_quickly() -> None:
+    """A cold statistics cache must cost seconds, not half a minute.
+
+    GitHub answers 202 while it computes a repo's commit activity. Across a
+    few hundred repos a cold cache is the common case, so waiting it out
+    once cost up to 30s each and then raised anyway -- enough sleeping to
+    time out a scheduled run for a figure that is only a nice-to-have.
+    """
+    print("client 202 handling")
+    from aiscout.client import GitHubClient, Response
+
+    client = GitHubClient(backend="gh", max_retries=5, max_202_waits=2)
+    calls = {"n": 0}
+    slept = {"total": 0.0}
+    client._raw_get = lambda path, params: (
+        calls.__setitem__("n", calls["n"] + 1), Response(202, {}, None))[1]
+    client._sleep = lambda s, why: slept.__setitem__("total", slept["total"] + s)
+
+    resp = client.get("repos/o/r/stats/commit_activity", allow_202=True)
+    check("hands back the 202 instead of raising", resp.status == 202,
+          str(resp.status))
+    check("stops after max_202_waits + 1 requests", calls["n"] == 3,
+          str(calls["n"]))
+    check("total wait stays under 10s", slept["total"] <= 10,
+          str(slept["total"]))
+    check("counted as unavailable",
+          client.stats["stats_unavailable"] == 1,
+          str(client.stats["stats_unavailable"]))
+
+    # and the caller treats it as "no data", not as an error
+    from aiscout.enrich import Enricher
+    e = Enricher(client=client, verbose=False)
+    recent, prior = e.commit_activity("o/r")
+    check("commit_activity reports no data", recent is None and prior is None,
+          f"{recent}, {prior}")
+
+
+def test_enrichment_budget() -> None:
+    """Stage 2 must stop on time rather than overrun the job."""
+    print("enrichment time budget")
+    from aiscout.enrich import Enricher
+    from aiscout.client import GitHubClient
+
+    client = GitHubClient(backend="gh")
+    e = Enricher(client=client, verbose=False)
+    seen = []
+    e.enrich_one = lambda repo: (seen.append(repo["full_name"]),
+                                 time.sleep(0.05), {"enriched": True})[2]
+
+    repos = [{"full_name": "o/r%d" % i} for i in range(40)]
+    e.run(repos, limit=40, budget_seconds=0.2)
+    check("stopped well before the full shortlist", len(seen) < 40, str(len(seen)))
+    check("but did enrich something", len(seen) > 0, str(len(seen)))
+
+
 def main() -> int:
     for fn in (test_percentiles, test_http_parsing, test_categories,
                test_momentum_baselines, test_momentum_deceleration,
                test_momentum_without_history, test_rel_growth_with_history,
                test_weight_renormalisation, test_teaching_repos_excluded,
+               test_202_gives_up_quickly, test_enrichment_budget,
                test_flags):
         fn()
     print()

@@ -209,6 +209,7 @@ DEFAULTS = {
     "search_page_size":   100,
     "search_min_interval": 2.1,     # 30 search req/min -> one every 2.1s
     "enrich_top_n":       250,
+    "enrich_budget_s":    1200,     # stage 2 stops after 20 minutes
     "max_per_owner":      3,
     "report_top_n":       40,
 }

@@ -79,7 +79,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
     degraded = True
     if args.enrich:
         ordered = sorted(repos, key=lambda r: r["influence"], reverse=True)
-        enricher.run(ordered, args.enrich_top)
+        enricher.run(ordered, args.enrich_top, args.enrich_budget)
         degraded = enricher.degraded
         if not degraded:
             scorer.rank(repos, enriched=True)
@@ -233,6 +233,9 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--min-stars-keyword", type=int, default=d["min_stars_keyword"])
     s.add_argument("--top", type=int, default=d["report_top_n"])
     s.add_argument("--enrich-top", type=int, default=d["enrich_top_n"])
+    s.add_argument("--enrich-budget", type=float, default=d["enrich_budget_s"],
+                   help="wall-clock seconds stage 2 may spend before it stops "
+                        "and leaves the rest on search-only signals")
     s.add_argument("--max-per-owner", type=int, default=d["max_per_owner"],
                    help="0 disables the per-owner cap")
     s.add_argument("--min-relevance", type=float, default=0.35)
