@@ -1,0 +1,714 @@
+<meta name="dash-one-writer">
+<style>
+  /* Layout: one column -- framing, tiles, one scatter, then the two rankings
+     as tabs. The scatter is the point of the page: stars against weekly rate
+     on log axes separates the established from the newly arrived. */
+  .r-wrap { display: flex; flex-direction: column; gap: var(--cds-gap-xl); }
+  .r-head { display: flex; flex-direction: column; gap: var(--cds-gap-sm); }
+  .r-title {
+    font-family: var(--font-anthropic-serif); font-weight: 400;
+    font-size: var(--cds-font-size-title); margin: 0; text-wrap: balance;
+  }
+  .r-sub {
+    margin: 0; color: var(--color-fg-muted);
+    font-size: var(--cds-font-size-body); max-width: 68ch;
+  }
+  .r-note {
+    border: 1px solid var(--color-border-line); border-left-width: 3px;
+    border-left-color: var(--color-warn); border-radius: var(--cds-radius);
+    padding: var(--cds-pad-md); font-size: var(--cds-font-size-caption);
+    color: var(--color-fg-muted); max-width: 80ch;
+  }
+  .r-note strong { color: var(--color-fg); }
+
+  .r-tiles {
+    display: grid; gap: var(--cds-gap-md);
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+  .r-tile {
+    background: var(--color-panel); border: 1px solid var(--color-border-line);
+    border-radius: var(--cds-radius); padding: var(--cds-pad-lg);
+    display: flex; flex-direction: column; gap: 2px; min-width: 0;
+  }
+  .r-tile-n {
+    font-family: var(--font-anthropic-serif); font-weight: 400;
+    font-size: var(--cds-font-size-title); font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .r-tile-l {
+    font-size: var(--cds-font-size-caption); color: var(--color-fg-muted);
+  }
+
+  .r-section { display: flex; flex-direction: column; gap: var(--cds-gap-md); }
+  .r-h2 {
+    margin: 0; font-size: var(--cds-font-size-heading);
+    font-weight: var(--cds-font-weight-medium);
+  }
+  .r-lede {
+    margin: 0; color: var(--color-fg-muted);
+    font-size: var(--cds-font-size-caption); max-width: 72ch;
+  }
+
+  .r-chart-box {
+    position: relative; background: var(--color-panel);
+    border: 1px solid var(--color-border-line);
+    border-radius: var(--cds-radius); padding: var(--cds-pad-md);
+    min-height: 340px;
+  }
+  .r-chart-box svg { display: block; width: 100%; height: auto; }
+  .r-tip {
+    position: absolute; pointer-events: none; opacity: 0;
+    transition: opacity 120ms; background: var(--cds-surface-popover);
+    border: 1px solid var(--cds-border); border-radius: var(--cds-radius);
+    box-shadow: var(--cds-shadow-popover); padding: 8px 10px;
+    font-size: var(--cds-font-size-caption); max-width: 260px; z-index: 5;
+  }
+  .r-tip b { display: block; margin-bottom: 2px; }
+  .r-tip span { color: var(--cds-text-secondary); }
+  .r-legend {
+    display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm) var(--cds-gap-md);
+    font-size: var(--cds-font-size-caption); color: var(--color-fg-muted);
+  }
+  .r-key { display: inline-flex; align-items: center; gap: 6px; }
+  .r-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .r-axis text { fill: var(--cds-text-secondary); font-size: 11px; }
+  .r-axis line, .r-axis path { stroke: var(--cds-chart-axis); }
+  .r-grid line { stroke: var(--cds-chart-grid); }
+
+  .r-bar {
+    display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm);
+    align-items: center; justify-content: space-between;
+  }
+  .r-tabs { display: flex; gap: 2px; flex-wrap: wrap; }
+  .r-tab {
+    appearance: none; cursor: pointer; font: inherit;
+    font-size: var(--cds-font-size-caption);
+    background: transparent; color: var(--color-fg-muted);
+    border: 1px solid var(--color-border-line);
+    border-radius: var(--cds-radius); padding: 6px 12px;
+  }
+  .r-tab[aria-selected="true"] {
+    background: var(--color-panel); color: var(--color-fg);
+    font-weight: var(--cds-font-weight-medium);
+  }
+
+  .r-scroll { overflow-x: auto; }
+  table.r-table {
+    border-collapse: collapse; width: 100%; min-width: 720px;
+    font-size: var(--cds-font-size-caption);
+  }
+  .r-table th, .r-table td {
+    text-align: left; padding: 7px 10px; vertical-align: top;
+    border-bottom: 1px solid var(--color-border-line);
+  }
+  .r-table th {
+    color: var(--color-fg-muted); font-weight: var(--cds-font-weight-medium);
+    white-space: nowrap; position: sticky; top: 0;
+    background: var(--color-bg); z-index: 1;
+  }
+  .r-table td.r-num, .r-table th.r-num {
+    text-align: right; font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .r-table tbody tr:hover { background: var(--color-panel); }
+  .r-name { font-weight: var(--cds-font-weight-medium); }
+  .r-name a { color: inherit; text-decoration: none; }
+  .r-name a:hover { text-decoration: underline; }
+  .r-what { color: var(--color-fg-muted); min-width: 220px; }
+  .r-cat {
+    display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+  }
+  .r-flag {
+    display: inline-block; border-radius: 3px; padding: 1px 5px;
+    margin-right: 3px; font-size: 10.5px; white-space: nowrap;
+    border: 1px solid var(--color-border-line); color: var(--color-fg-muted);
+  }
+  .r-flag.bad { border-color: var(--color-bad); color: var(--color-bad); }
+  .r-empty {
+    padding: var(--cds-pad-lg); color: var(--color-fg-muted);
+    font-size: var(--cds-font-size-caption);
+  }
+  .r-foot {
+    font-size: var(--cds-font-size-caption); color: var(--color-fg-muted);
+  }
+  .r-foot summary { cursor: pointer; }
+  .r-foot dl { display: grid; gap: 6px 14px; grid-template-columns: max-content 1fr; margin: var(--cds-gap-md) 0 0; }
+  .r-foot dt { font-weight: var(--cds-font-weight-medium); color: var(--color-fg); white-space: nowrap; }
+  .r-foot dd { margin: 0; }
+  @media (max-width: 520px) {
+    .r-foot dl { grid-template-columns: 1fr; }
+    .r-foot dd { margin-bottom: var(--cds-gap-sm); }
+  }
+</style>
+
+<div class="r-wrap">
+
+  <header class="r-head">
+    <h1 class="r-title">AI open-source radar</h1>
+    <p class="r-sub">
+      <span data-draw="t-ranked" data-source="run" data-field="ranked" data-row="0">—</span> projects ranked out of
+      <span data-draw="t-candidates" data-source="run" data-field="candidates" data-row="0">—</span> AI repositories found across
+      <span data-draw="t-requests" data-source="run" data-field="search_requests" data-row="0">—</span> GitHub searches. Stars are
+      log-scaled and weighted at about a quarter, because star count is a
+      lagging and gameable measure; forks, push recency and growth carry the
+      rest. Collected <span data-draw="t-when" data-source="run" data-field="generated_at" data-row="0">—</span>.
+    </p>
+  </header>
+
+  <p class="r-note" id="lifetime-note">
+    <strong>The second ranking is not momentum yet.</strong> With only one
+    snapshot there is nothing to diff against, so growth is a lifetime
+    average — stars divided by age. That is a launch rate, not a current
+    one, and it favours young repositories because their denominator is
+    small. Two momentum signals carry no information in this mode
+    (<span data-draw="t-dropped" data-source="run" data-field="dropped_signals" data-row="0">—</span>) and are dropped rather than
+    scored, with their weight redistributed over the rest. Run the scan
+    again tomorrow and this becomes a real week-over-week figure.
+  </p>
+  <p class="r-note" id="delta-note" hidden>
+    <strong>Growth is measured.</strong> Weekly figures come from diffing
+    this run against an earlier snapshot, so they describe current rate
+    rather than lifetime average.
+  </p>
+
+  <div class="r-tiles">
+    <div class="r-tile">
+      <span class="r-tile-n" data-draw="k-candidates" data-source="run" data-field="candidates" data-row="0">—</span>
+      <span class="r-tile-l">AI repositories found</span>
+    </div>
+    <div class="r-tile">
+      <span class="r-tile-n" data-draw="k-ranked" data-source="run" data-field="ranked" data-row="0">—</span>
+      <span class="r-tile-l">made the two rankings</span>
+    </div>
+    <div class="r-tile">
+      <span class="r-tile-n" data-draw="k-both" data-source="run" data-field="in_both_rankings" data-row="0">—</span>
+      <span class="r-tile-l">rank in both at once</span>
+    </div>
+    <div class="r-tile">
+      <span class="r-tile-n" data-draw="k-flagged" data-source="run" data-field="flagged" data-row="0">—</span>
+      <span class="r-tile-l">carry a hygiene flag</span>
+    </div>
+  </div>
+
+  <section class="r-section" id="scatter">
+    <h2 class="r-h2">Established against newly arrived</h2>
+    <p class="r-lede">
+      Both axes are logarithmic. Projects to the right have the most stars
+      overall; projects high up are gathering them fastest. The established
+      frameworks sit low and right — large, and growing slowly relative to
+      their size. Point at any circle for its numbers.
+    </p>
+    <div class="r-chart-box" data-source="repos" id="scatter-box">
+      <div data-draw="scatter"></div>
+    </div>
+    <div class="r-legend" data-draw="legend"></div>
+  </section>
+
+  <section class="r-section" id="rankings">
+    <div class="r-bar">
+      <div class="r-tabs" role="tablist" aria-label="Ranking">
+        <button class="r-tab" id="tab-influence" role="tab"
+                aria-controls="panel-influence" aria-selected="true">
+          Most influential
+        </button>
+        <button class="r-tab" id="tab-momentum" role="tab"
+                aria-controls="panel-momentum" aria-selected="false">
+          <span data-draw="tab2-label">Fastest since launch</span>
+        </button>
+      </div>
+      <select class="dash-select" data-draw="cat-filter" id="cat-filter"
+              aria-label="Filter by category" data-source="repos"></select>
+    </div>
+
+    <div id="panel-influence" role="tabpanel" aria-labelledby="tab-influence">
+      <p class="r-lede">
+        Weighted on log stars, community breadth, how recently it was
+        pushed, fork activity and growth, then gated by how confidently the
+        repository is AI-related. Capped at three repositories per owner so
+        one organisation cannot fill the list.
+      </p>
+      <div class="r-scroll">
+        <table class="r-table" data-source="repos" data-row-key="full_name">
+          <thead>
+            <tr>
+              <th class="r-num" data-field="rank_influence">#</th>
+              <th data-field="full_name">Project</th>
+              <th class="r-num" data-field="influence_score">Score</th>
+              <th class="r-num" data-field="stars">Stars</th>
+              <th class="r-num" data-field="weekly_stars">Per week</th>
+              <th class="r-num" data-field="fork_ratio">Fork:star</th>
+              <th data-field="category">Category</th>
+              <th data-field="description">What it is</th>
+            </tr>
+          </thead>
+          <tbody data-draw="rows-influence"></tbody>
+        </table>
+      </div>
+      <p class="r-empty" data-draw="empty-influence" hidden></p>
+    </div>
+
+    <div id="panel-momentum" role="tabpanel" aria-labelledby="tab-momentum" hidden>
+      <p class="r-lede">
+        Ranked on how fast stars arrived. Read it as what landed hard, not
+        what is growing now — see the note at the top.
+      </p>
+      <div class="r-scroll">
+        <table class="r-table" data-source="repos" data-row-key="full_name">
+          <thead>
+            <tr>
+              <th class="r-num" data-field="rank_momentum">#</th>
+              <th data-field="full_name">Project</th>
+              <th class="r-num" data-field="momentum_score">Score</th>
+              <th class="r-num" data-field="weekly_stars">Per week</th>
+              <th class="r-num" data-field="stars">Stars</th>
+              <th class="r-num" data-field="age_days">Age (days)</th>
+              <th data-field="category">Category</th>
+              <th data-field="description">What it is</th>
+            </tr>
+          </thead>
+          <tbody data-draw="rows-momentum"></tbody>
+        </table>
+      </div>
+      <p class="r-empty" data-draw="empty-momentum" hidden></p>
+    </div>
+  </section>
+
+  <details class="r-foot" id="glossary">
+    <summary>What the flags mean, and what this cannot see</summary>
+    <dl>
+      <dt>suspect-stars</dt>
+      <dd>Over 5,000 stars but fewer than one fork per hundred. Real
+        projects attract forks; langchain runs about 0.10 and pytorch about
+        0.27, while bought stars sit below 0.01. The score is cut by 45%.</dd>
+      <dt>solo-project</dt>
+      <dd>Thousands of stars but two contributors or fewer. Not a fault,
+        but not community influence either.</dd>
+      <dt>no-license</dt>
+      <dd>No licence file, so nobody can legally depend on it.</dd>
+      <dt>issue-backlog</dt>
+      <dd>Open issues above 8% of stars.</dd>
+      <dt>too-new</dt>
+      <dd>Created less than three weeks ago; too early to judge.</dd>
+      <dt>not-software</dt>
+      <dd>Awesome-lists, courses and roadmaps. Excluded from the rankings —
+        they win on stars without being software.</dd>
+      <dt>Missing signals</dt>
+      <dd>Contributor counts and 90-day commit activity need per-repository
+        API calls, which were blocked where this scan ran, so community
+        breadth falls back to fork count. A run with an ordinary token
+        fills both in.</dd>
+      <dt>Not measured at all</dt>
+      <dd>Dependent counts are the strongest influence signal GitHub has,
+        but no REST endpoint exposes them. Package-manager download figures
+        would be the better substitute.</dd>
+    </dl>
+  </details>
+</div>
+
+<script>
+  // Page state the reader controls. Kept here rather than in filter params
+  // because the rows are a file: filtering is local, so no query re-runs.
+  window.R = {category: '', fmt: {}};
+
+  R.fmt.k = (n) => {
+    if (n === null || n === undefined || Number.isNaN(n)) return '—';
+    const v = Number(n);
+    if (Math.abs(v) >= 1e6) return (v / 1e6).toFixed(1) + 'M';
+    if (Math.abs(v) >= 1e4) return Math.round(v / 1e3) + 'k';
+    if (Math.abs(v) >= 1e3) return (v / 1e3).toFixed(1) + 'k';
+    return String(Math.round(v));
+  };
+  R.fmt.int = (n) => (n === null || n === undefined) ? '—'
+    : Number(n).toLocaleString('en-US');
+  R.fmt.day = (iso) => {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? '—'
+      : d3.utcFormat('%e %B %Y')(d).trim();
+  };
+
+  R.rows = () => {
+    const g = dash.data('repos');
+    return g.status === 'ok' && Array.isArray(g.data) ? g.data : [];
+  };
+  R.visible = (key) => R.rows()
+    .filter((r) => r[key] !== null && r[key] !== undefined)
+    .filter((r) => !R.category || r.category === R.category)
+    .sort((a, b) => a[key] - b[key]);
+
+  // Category -> colour, assigned once over the categories present so the
+  // scatter, its legend and the tables agree.
+  R.colourFor = (() => {
+    let map = null;
+    return (cat) => {
+      if (!map) {
+        const cats = [...new Set(R.rows().map((r) => r.category))].sort();
+        map = new Map(cats.map((c, i) => [c, dash.colors[i % dash.colors.length]]));
+      }
+      return map.get(cat) || dash.colors[0];
+    };
+  })();
+  R.categories = () => [...new Set(R.rows().map((r) => r.category))].sort();
+</script>
+
+<script>
+  // ---- framing numbers, all from the run metadata row -------------------
+  const runField = (name, fmt) => (el) => {
+    const g = dash.data('run');
+    const row = g.status === 'ok' && g.data && g.data[0];
+    el.textContent = row ? fmt(row[name]) : '—';
+  };
+
+  dash.draw('t-ranked', runField('ranked', R.fmt.int));
+  dash.draw('t-candidates', runField('candidates', R.fmt.int));
+  dash.draw('t-requests', runField('search_requests', R.fmt.int));
+  dash.draw('t-when', runField('generated_at', R.fmt.day));
+  dash.draw('t-dropped', runField('dropped_signals', (v) => v || 'none'));
+  dash.draw('k-candidates', runField('candidates', R.fmt.int));
+  dash.draw('k-ranked', runField('ranked', R.fmt.int));
+  dash.draw('k-both', runField('in_both_rankings', R.fmt.int));
+  dash.draw('k-flagged', runField('flagged', R.fmt.int));
+
+  // Which note and which tab label apply depends on the data, and a hidden
+  // element runs no drawing, so this swap happens in onData.
+  dash.onData(() => {
+    const g = dash.data('run');
+    const row = g.status === 'ok' && g.data && g.data[0];
+    if (!row) return;
+    const lifetime = row.momentum_source === 'lifetime';
+    const lifeNote = document.getElementById('lifetime-note');
+    const deltaNote = document.getElementById('delta-note');
+    if (lifeNote) lifeNote.hidden = !lifetime;
+    if (deltaNote) deltaNote.hidden = lifetime;
+  });
+
+  dash.draw('tab2-label', (el) => {
+    const g = dash.data('run');
+    const row = g.status === 'ok' && g.data && g.data[0];
+    el.textContent = row && row.momentum_source !== 'lifetime'
+      ? 'Strongest momentum' : 'Fastest since launch';
+  });
+</script>
+
+<script>
+  // ---- category filter --------------------------------------------------
+  dash.draw('cat-filter', (sel) => {
+    const cats = R.categories();
+    sel.replaceChildren(
+      new Option('All categories', ''),
+      ...cats.map((c) => new Option(c, c)));
+    sel.value = R.category;
+    sel.onchange = () => {
+      R.category = sel.value;
+      dash.draw('rows-influence');
+      dash.draw('rows-momentum');
+      dash.draw('empty-influence');
+      dash.draw('empty-momentum');
+      dash.draw('scatter');
+      dash.draw('legend');
+    };
+  });
+</script>
+
+<script>
+  // ---- the two ranking tables ------------------------------------------
+  const FLAG_BAD = new Set(['suspect-stars', 'not-software', 'archived', 'dormant']);
+
+  function flagChips(flags) {
+    if (!flags) return [];
+    return flags.split(',').map((f) => f.trim()).filter(Boolean).map((f) => {
+      const s = document.createElement('span');
+      s.className = 'r-flag' + (FLAG_BAD.has(f) ? ' bad' : '');
+      s.textContent = f;
+      return s;
+    });
+  }
+
+  function cell(text, cls) {
+    const td = document.createElement('td');
+    if (cls) td.className = cls;
+    td.textContent = text;
+    return td;
+  }
+
+  function nameCell(row) {
+    const td = document.createElement('td');
+    td.className = 'r-name';
+    const a = document.createElement('a');
+    a.href = row.url || '#';
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    // textContent, never innerHTML: these values come from GitHub.
+    a.textContent = row.full_name;
+    td.append(a);
+    return td;
+  }
+
+  function catCell(row) {
+    const td = document.createElement('td');
+    const wrap = document.createElement('span');
+    wrap.className = 'r-cat';
+    const dot = document.createElement('span');
+    dot.className = 'r-dot';
+    dot.style.background = R.colourFor(row.category);
+    wrap.append(dot, document.createTextNode(row.category || '—'));
+    td.append(wrap);
+    return td;
+  }
+
+  function whatCell(row) {
+    const td = document.createElement('td');
+    td.className = 'r-what';
+    const text = (row.description || '').trim();
+    td.append(document.createTextNode(
+      text.length > 96 ? text.slice(0, 95) + '…' : (text || '—')));
+    const chips = flagChips(row.flags);
+    if (chips.length) {
+      td.append(document.createElement('br'));
+      chips.forEach((c) => td.append(c));
+    }
+    return td;
+  }
+
+  function buildRows(tbody, key, columns) {
+    const g = dash.data('repos');
+    if (g.status === 'loading') { tbody.replaceChildren(); return; }
+    if (g.status === 'error') {
+      const tr = document.createElement('tr');
+      const td = cell('This table could not load its data.');
+      td.colSpan = 8;
+      tr.append(td);
+      tbody.replaceChildren(tr);
+      return;
+    }
+    const rows = R.visible(key);
+    tbody.replaceChildren(...rows.map((row) => {
+      const tr = document.createElement('tr');
+      columns(tr, row);
+      return tr;
+    }));
+  }
+
+  dash.draw('rows-influence', (tbody) => {
+    buildRows(tbody, 'rank_influence', (tr, row) => {
+      tr.append(
+        cell(R.fmt.int(row.rank_influence), 'r-num'),
+        nameCell(row),
+        cell(row.influence_score == null ? '—'
+          : Number(row.influence_score).toFixed(1), 'r-num'),
+        cell(R.fmt.k(row.stars), 'r-num'),
+        cell('+' + R.fmt.k(row.weekly_stars), 'r-num'),
+        cell(row.fork_ratio == null ? '—'
+          : Number(row.fork_ratio).toFixed(3), 'r-num'),
+        catCell(row),
+        whatCell(row));
+    });
+  });
+
+  dash.draw('rows-momentum', (tbody) => {
+    buildRows(tbody, 'rank_momentum', (tr, row) => {
+      tr.append(
+        cell(R.fmt.int(row.rank_momentum), 'r-num'),
+        nameCell(row),
+        cell(row.momentum_score == null ? '—'
+          : Number(row.momentum_score).toFixed(1), 'r-num'),
+        cell('+' + R.fmt.k(row.weekly_stars), 'r-num'),
+        cell(R.fmt.k(row.stars), 'r-num'),
+        cell(row.age_days == null ? '—'
+          : R.fmt.int(Math.round(row.age_days)), 'r-num'),
+        catCell(row),
+        whatCell(row));
+    });
+  });
+
+  const emptyNote = (key) => (el) => {
+    const g = dash.data('repos');
+    const n = g.status === 'ok' ? R.visible(key).length : 1;
+    el.hidden = n > 0;
+    el.textContent = n > 0 ? ''
+      : 'No project in this category made this ranking.';
+  };
+  dash.draw('empty-influence', emptyNote('rank_influence'));
+  dash.draw('empty-momentum', emptyNote('rank_momentum'));
+</script>
+
+<script>
+  // ---- tabs -------------------------------------------------------------
+  const TABS = [
+    {tab: 'tab-influence', panel: 'panel-influence', draw: 'rows-influence'},
+    {tab: 'tab-momentum', panel: 'panel-momentum', draw: 'rows-momentum'},
+  ];
+
+  function selectTab(wanted) {
+    TABS.forEach(({tab, panel, draw}) => {
+      const button = document.getElementById(tab);
+      const pane = document.getElementById(panel);
+      const on = tab === wanted;
+      if (button) button.setAttribute('aria-selected', on ? 'true' : 'false');
+      if (pane) pane.hidden = !on;
+      // A hidden panel runs no drawing, so redraw on the way in.
+      if (on) dash.draw(draw);
+    });
+    dash.setLink('rankings');
+  }
+
+  TABS.forEach(({tab}) => {
+    const button = document.getElementById(tab);
+    if (button) button.onclick = () => selectTab(tab);
+  });
+</script>
+
+<script>
+  // ---- scatter: stars against weekly rate, both logarithmic -------------
+  dash.draw('scatter', {
+    mount(el) {
+      // The tooltip belongs to this drawing, not to the page: an element of
+      // its own outside here could only be written to by breaking the
+      // one-writer rule, and one with its own data-draw would be redrawn
+      // away at the moment it was shown. It positions against
+      // .r-chart-box, which is the nearest positioned ancestor.
+      el.replaceChildren();
+      const tip = document.createElement('div');
+      tip.className = 'r-tip';
+      el.append(tip);
+      return {tip};
+    },
+    update(el, made) {
+      const g = dash.data('repos');
+      const tip = made && made.tip;
+      el.replaceChildren();
+      if (tip) { tip.style.opacity = '0'; el.append(tip); }
+
+      if (g.status === 'loading') return;
+      if (g.status !== 'ok') {
+        const p = document.createElement('p');
+        p.className = 'r-empty';
+        p.textContent = 'The chart could not load its data.';
+        el.append(p);
+        return;
+      }
+
+      const data = R.rows()
+        .filter((r) => !R.category || r.category === R.category)
+        .filter((r) => r.stars > 0 && r.weekly_stars > 0);
+      if (!data.length) {
+        const p = document.createElement('p');
+        p.className = 'r-empty';
+        p.textContent = 'No project in this category to plot.';
+        el.append(p);
+        return;
+      }
+
+      const width = Math.max(el.clientWidth || 600, 260);
+      const height = Math.max(Math.min(width * 0.58, 420), 260);
+      const svg = d3.select(el).append('svg')
+        .attr('viewBox', `0 0 ${width} ${height}`)
+        .attr('role', 'img')
+        .attr('aria-label',
+          `Scatter plot of ${data.length} AI projects: total stars on the ` +
+          'horizontal axis against stars gained per week on the vertical ' +
+          'axis, both logarithmic, coloured by category.');
+
+      const x = d3.scaleLog()
+        .domain(d3.extent(data, (d) => d.stars)).nice();
+      const y = d3.scaleLog()
+        .domain(d3.extent(data, (d) => d.weekly_stars)).nice();
+
+      // Margins are measured from the ticks as actually drawn, since the
+      // data decides how wide a label is. getComputedTextLength needs the
+      // text in the document, so the axis is drawn once off to the side,
+      // measured, then placed.
+      const probe = svg.append('g').attr('class', 'r-axis')
+        .style('visibility', 'hidden');
+      const yTicks = y.ticks(5).length ? y.ticks(5) : y.domain();
+      probe.selectAll('text').data(yTicks).join('text')
+        .text((d) => R.fmt.k(d));
+      let widest = 0;
+      probe.selectAll('text').each(function () {
+        widest = Math.max(widest, this.getComputedTextLength());
+      });
+      probe.remove();
+
+      const m = {top: 14, right: 18, bottom: 40, left: Math.ceil(widest) + 16};
+      x.range([m.left, width - m.right]);
+      y.range([height - m.bottom, m.top]);
+
+      svg.append('g').attr('class', 'r-grid')
+        .selectAll('line').data(y.ticks(5)).join('line')
+        .attr('x1', m.left).attr('x2', width - m.right)
+        .attr('y1', (d) => y(d)).attr('y2', (d) => y(d));
+
+      const xAxis = svg.append('g').attr('class', 'r-axis')
+        .attr('transform', `translate(0,${height - m.bottom})`)
+        .call(d3.axisBottom(x).ticks(width < 420 ? 3 : 6, (d) => R.fmt.k(d)));
+      xAxis.select('.domain').attr('stroke', 'var(--cds-chart-axis)');
+
+      svg.append('g').attr('class', 'r-axis')
+        .attr('transform', `translate(${m.left},0)`)
+        .call(d3.axisLeft(y).tickValues(yTicks).tickFormat((d) => R.fmt.k(d)))
+        .select('.domain').remove();
+
+      svg.append('text').attr('class', 'r-axis')
+        .attr('x', (m.left + width - m.right) / 2)
+        .attr('y', height - 6).attr('text-anchor', 'middle')
+        .style('fill', 'var(--cds-text-secondary)')
+        .style('font-size', '11px')
+        .text('total stars (log)');
+
+      const show = (event, d) => {
+        if (!tip) return;
+        tip.replaceChildren();
+        const b = document.createElement('b');
+        b.textContent = d.full_name;
+        const s = document.createElement('span');
+        s.textContent =
+          `${R.fmt.int(d.stars)} stars · +${R.fmt.k(d.weekly_stars)}/week · ` +
+          `${d.category} · fork:star ${Number(d.fork_ratio).toFixed(3)}`;
+        tip.append(b, s);
+        const box = el.getBoundingClientRect();
+        const px = event.clientX - box.left;
+        const py = event.clientY - box.top;
+        tip.style.opacity = '1';
+        // Keep the tooltip inside the chart box.
+        tip.style.left = Math.min(Math.max(px + 12, 4),
+          Math.max(box.width - tip.offsetWidth - 4, 4)) + 'px';
+        tip.style.top = Math.max(py - tip.offsetHeight - 10, 4) + 'px';
+      };
+      const hide = () => { if (tip) tip.style.opacity = '0'; };
+
+      svg.append('g').selectAll('circle').data(data).join('circle')
+        .attr('cx', (d) => x(d.stars))
+        .attr('cy', (d) => y(d.weekly_stars))
+        .attr('r', (d) => (d.rank_influence && d.rank_influence <= 10) ? 6 : 4.5)
+        .style('fill', (d) => R.colourFor(d.category))
+        .style('fill-opacity', 0.75)
+        .style('stroke', 'var(--color-bg)')
+        .style('stroke-width', 1)
+        .style('cursor', 'pointer')
+        .on('pointerenter', show)
+        .on('pointermove', show)
+        .on('pointerleave', hide);
+
+      svg.append('text').attr('class', 'r-axis')
+        .attr('transform', `translate(12,${(m.top + height - m.bottom) / 2}) rotate(-90)`)
+        .attr('text-anchor', 'middle')
+        .style('fill', 'var(--cds-text-secondary)')
+        .style('font-size', '11px')
+        .text('stars per week (log)');
+    },
+  });
+
+  dash.draw('legend', (el) => {
+    const cats = R.categories()
+      .filter((c) => !R.category || c === R.category);
+    el.replaceChildren(...cats.map((c) => {
+      const key = document.createElement('span');
+      key.className = 'r-key';
+      const dot = document.createElement('span');
+      dot.className = 'r-dot';
+      dot.style.background = R.colourFor(c);
+      key.append(dot, document.createTextNode(c));
+      return key;
+    }));
+  });
+</script>

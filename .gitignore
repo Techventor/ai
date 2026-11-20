@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Keep data/aiscout.db -- it is the snapshot history that momentum depends on.
+data/smoke.db
+data/delta-test.db
+data/*.db-journal
+data/*.db-wal

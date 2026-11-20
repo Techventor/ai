@@ -1,0 +1,89 @@
+name: AI OSS radar
+
+# Momentum needs history, and history only exists if this runs on a
+# schedule. The SQLite snapshot store is committed back to the repo so each
+# run can diff against the previous ones.
+on:
+  schedule:
+    - cron: "37 6 * * *"   # daily, off the hour to dodge scheduler congestion
+  workflow_dispatch:
+    inputs:
+      quick:
+        description: "Core topics only (much faster)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: radar
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install --quiet requests
+
+      # This workflow runs with no setup at all. RADAR_TOKEN is optional and
+      # only raises the enrichment budget: the automatic GITHUB_TOKEN allows
+      # 1000 core requests/hour and each repo costs ~3, so without a PAT the
+      # shortlist is capped well under that. Search is 30/min for any token,
+      # so stage 1 is unaffected either way.
+      - name: Pick the enrichment budget
+        env:
+          RADAR_TOKEN: ${{ secrets.RADAR_TOKEN }}
+        run: |
+          if [ -n "$RADAR_TOKEN" ]; then
+            echo "ENRICH_TOP=250" >> "$GITHUB_ENV"
+            echo "Using RADAR_TOKEN (5000 core req/hour): enriching 250 repos."
+          else
+            echo "ENRICH_TOP=120" >> "$GITHUB_ENV"
+            echo "No RADAR_TOKEN set, using the built-in GITHUB_TOKEN"
+            echo "(1000 core req/hour): enriching 120 repos."
+            echo "Add a RADAR_TOKEN secret to raise this -- see the README."
+          fi
+
+      - name: Scan
+        env:
+          GITHUB_TOKEN: ${{ secrets.RADAR_TOKEN || secrets.GITHUB_TOKEN }}
+          QUICK: ${{ inputs.quick }}
+        run: |
+          args=(--db data/aiscout.db scan --out reports --enrich-top "$ENRICH_TOP")
+          [ "$QUICK" = "true" ] && args+=(--quick)
+          python -m aiscout "${args[@]}"
+
+      - name: Commit reports and snapshots
+        run: |
+          git config user.name  "ai-oss-radar"
+          git config user.email "noreply@github.com"
+          git add reports data/aiscout.db
+          if git diff --cached --quiet; then
+            echo "nothing changed"
+            exit 0
+          fi
+          git commit -m "radar: $(date -u +%Y-%m-%d) scan"
+          # The schedule is serialised by `concurrency`, but a human push can
+          # still land first, so rebase rather than fail the run.
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" && \
+              git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            sleep $((i * 5))
+          done
+          echo "could not push after 3 attempts" >&2
+          exit 1
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: radar-reports
+          path: reports/
+          retention-days: 90

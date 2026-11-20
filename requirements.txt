@@ -1,0 +1,4 @@
+# The only dependency, and only for the "requests" backend.
+# The "gh" backend (shelling out to the GitHub CLI) needs nothing at all,
+# so `python3 -m aiscout --backend gh scan` runs on a bare stdlib install.
+requests>=2.31
