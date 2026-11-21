@@ -1,10 +1,10 @@
 [
  {
-  "generated_at": "2026-11-20T16:29:10+00:00",
-  "candidates": 26747,
-  "search_requests": 801,
-  "ranked": 48,
-  "in_both_rankings": 32,
+  "generated_at": "2026-11-21T15:30:01+00:00",
+  "candidates": 26766,
+  "search_requests": 804,
+  "ranked": 49,
+  "in_both_rankings": 31,
   "flagged": 7,
   "momentum_source": "lifetime",
   "dropped_signals": "accel, rel_growth",
