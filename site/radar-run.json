@@ -1,11 +1,11 @@
 [
  {
-  "generated_at": "2026-11-21T15:30:01+00:00",
-  "candidates": 26766,
-  "search_requests": 804,
+  "generated_at": "2026-11-22T15:26:39+00:00",
+  "candidates": 26810,
+  "search_requests": 802,
   "ranked": 49,
   "in_both_rankings": 31,
-  "flagged": 7,
+  "flagged": 8,
   "momentum_source": "lifetime",
   "dropped_signals": "accel, rel_growth",
   "enriched": 120,
