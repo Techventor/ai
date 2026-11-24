@@ -1,11 +1,11 @@
 [
  {
-  "generated_at": "2026-11-23T19:27:52+00:00",
-  "candidates": 26856,
-  "search_requests": 805,
-  "ranked": 64,
-  "in_both_rankings": 16,
-  "flagged": 10,
+  "generated_at": "2026-11-24T19:05:14+00:00",
+  "candidates": 26895,
+  "search_requests": 810,
+  "ranked": 62,
+  "in_both_rankings": 18,
+  "flagged": 12,
   "momentum_source": "delta",
   "dropped_signals": "accel",
   "enriched": 120,
